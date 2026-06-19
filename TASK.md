@@ -2,7 +2,7 @@
 
 > **图标**: `assets/icon.png`（全平台统一）  
 > **仓库**: `web3-hot-topic-labs`  
-> **依赖主库**: `web3-edu-platform-core` ≥ v0.1.0  
+> **依赖主库**: `web3-edu-platform-core` ≥ v0.3.0  
 > **compliance_tier**: `hot_topic`  
 > **禁止**: 修改主库；主网；真实交易策略；生产级 Rollup 部署方案
 
@@ -169,3 +169,12 @@ make compliance-check  # 在主库对子库路径扫描：bash ci/compliance/com
 - 未实现项: ...
 - 主库集成说明: 运行 register-plugins 后 registry 条目
 ```
+
+---
+
+## v0.2.0 发布
+
+- **版本**: `0.2.0`（见 `VERSION`）
+- **主库对齐**: `spec.coreVersion: ">=0.3.0 <0.4.0"`，依赖 core **≥ v0.3.0**
+- **变更**: 11 插件 manifest semver 升级；`build-images/manifest.yaml` 版本同步；教程合规脚注齐套
+- **验收**: `make validate-plugin` × 11 · `make register-plugins` · `joint-debug-smoke.sh`

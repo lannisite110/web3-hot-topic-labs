@@ -31,3 +31,7 @@ curl -X POST http://127.0.0.1:8080/api/v1/labs/edu.hot.language-advisor/simulate
 | 测试网部署演示 | 主网上线 |
 | 语言/工具链教学推荐 | 真实交易策略 |
 | 多语言编译 Job 仿真 | 生产级 Rollup 部署 |
+
+---
+
+> **合规脚注**: testnet-only · 虚构数据 only

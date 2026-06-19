@@ -4,6 +4,8 @@
 
 # Web3 Hot Topic Labs
 
+> **版本 v0.2.0** · 测试网/仿真 only
+
 Web3 前沿热点**教学插件包**（子库1）。
 
 ## 核心能力
@@ -12,7 +14,7 @@ Web3 前沿热点**教学插件包**（子库1）。
 2. **智能语言择优** — `edu.hot.language-advisor` 按业务自动推荐最优合约语言
 3. **10 个热点 Lab** — ZK / AA / MEV / DAO 等（共 **11** 插件含择优入口）
 
-依赖 [web3-edu-platform-core](../web3-edu-platform-core) ≥ v0.1.0。
+依赖 [web3-edu-platform-core](../web3-edu-platform-core) **≥ v0.3.0**。
 
 ## 插件清单（11）
 
