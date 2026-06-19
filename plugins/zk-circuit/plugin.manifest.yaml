@@ -3,7 +3,7 @@ kind: PluginPackage
 metadata:
   id: edu.hot.zk-circuit
   name: ZK Circuit Compile Lab
-  version: 0.2.0
+  version: 0.3.0
   repo: web3-hot-topic-labs
   compliance_tier: hot_topic
 

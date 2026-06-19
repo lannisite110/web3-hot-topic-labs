@@ -1,7 +1,7 @@
 # 语言组 → 容器镜像注册表
 # 主库 container-manager 读取此文件（子库1 维护，主库只读挂载）
 
-version: "0.2.0"
+version: "0.3.0"
 
 groups:
   evm:
