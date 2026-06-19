@@ -1,0 +1,29 @@
+apiVersion: edu.web3/v1
+kind: PluginPackage
+metadata:
+  id: edu.hot.aa-wallet
+  name: Account Abstraction Wallet Lab
+  version: 0.1.0
+  repo: web3-hot-topic-labs
+  compliance_tier: hot_topic
+
+spec:
+  coreVersion: ">=0.1.0 <0.2.0"
+  taskTypes:
+    - HOT_AA_WALLET_SIM
+  namespaces:
+    - ns-hot-aa
+  allowedChainIds:
+    - 11155111
+  frontend:
+    routePrefix: /labs/edu.hot.aa-wallet
+    entry: plugins/aa-wallet/frontend/plugin.ts
+  rules:
+    entry: plugins.rules.aa_wallet:evaluate
+  contracts:
+    - path: plugins/aa-wallet/contracts/AAWalletDemo.sol
+      language: solidity
+  k8s:
+    jobTemplate: k8s/overlays/ns-hot-aa/aa-wallet-job.yaml
+  docs:
+    - docs/tutorials/aa-wallet-intro.md

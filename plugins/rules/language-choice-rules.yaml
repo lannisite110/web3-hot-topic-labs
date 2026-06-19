@@ -1,0 +1,76 @@
+# 智能合约语言择优规则 — 平台核心价值
+# 主库 rule-engine 与子库 language-advisor 插件共用此配置
+
+version: "1.0.0"
+
+# 业务场景 → 推荐语言 → 工具链组 → 说明
+rules:
+  - id: defi-general
+    keywords: [defi, swap, dex, lending, staking, 通用合约, erc20, erc721]
+    language: solidity
+    toolchain_group: evm
+    tools: [solc, foundry]
+    reason: 普通 DeFi、通用合约，生态最成熟
+
+  - id: vault-high-security
+    keywords: [vault, treasury, 金库, 资金池, 高安全, timelock]
+    language: vyper
+    toolchain_group: evm
+    tools: [vyper]
+    reason: 资金池、金库、极高安全合约，语法简洁易审计
+
+  - id: gas-hft-kernel
+    keywords: [gas, 优化, huff, 撮合, 内核, assembly, 高频]
+    language: huff
+    toolchain_group: evm
+    tools: [huff, foundry]
+    reason: 极致 Gas 优化、高频撮合内核
+
+  - id: solana-tps
+    keywords: [solana, anchor, 高tps, 高性能, depin, 链上订单簿]
+    language: rust
+    toolchain_group: solana
+    tools: [rust, anchor]
+    reason: Solana 高 TPS 高性能合约
+
+  - id: nft-move-security
+    keywords: [nft, move, aptos, sui, 资产安全, 防重放, 防盗]
+    language: move
+    toolchain_group: move
+    tools: [aptos, sui]
+    reason: NFT、资产安全、防盗防重放
+
+  - id: zk-rollup
+    keywords: [zk, rollup, cairo, starknet, 零知识, 证明]
+    language: cairo
+    toolchain_group: zk
+    tools: [cairo, starknet-foundry]
+    reason: ZK-Rollup、零知识证明合约
+
+  - id: btc-l2
+    keywords: [bitcoin, btc, stacks, clarity, 比特币二层]
+    language: clarity
+    toolchain_group: btc
+    tools: [clarity]
+    reason: 比特币二层可验证合约
+
+  - id: gamefi-cadence
+    keywords: [flow, cadence, 链游, gamefi, ip, 大牌nft]
+    language: cadence
+    toolchain_group: flow
+    tools: [cadence]
+    reason: 链游、大牌 IP NFT
+
+  - id: payment-teal
+    keywords: [algorand, teal, pyteal, 支付, 合规支付, 极简]
+    language: teal
+    toolchain_group: algorand
+    tools: [pyteal, teal]
+    reason: 极简合规支付场景
+
+# 默认回退
+default:
+  language: solidity
+  toolchain_group: evm
+  tools: [solc, foundry]
+  reason: 未匹配到特定场景时使用 EVM Solidity 通用方案

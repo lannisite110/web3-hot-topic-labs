@@ -1,0 +1,29 @@
+apiVersion: edu.web3/v1
+kind: PluginPackage
+metadata:
+  id: edu.hot.dao
+  name: DAO Vote Simulation Lab
+  version: 0.1.0
+  repo: web3-hot-topic-labs
+  compliance_tier: hot_topic
+
+spec:
+  coreVersion: ">=0.1.0 <0.2.0"
+  taskTypes:
+    - HOT_DAO_VOTE_SIM
+  namespaces:
+    - ns-hot-sim
+  allowedChainIds:
+    - 11155111
+  frontend:
+    routePrefix: /labs/edu.hot.dao
+    entry: plugins/dao/frontend/plugin.ts
+  rules:
+    entry: plugins.rules.dao:evaluate
+  contracts:
+    - path: plugins/dao/contracts/DaoVoteDemo.sol
+      language: solidity
+  k8s:
+    jobTemplate: k8s/overlays/ns-hot-sim/dao-job.yaml
+  docs:
+    - docs/tutorials/dao-intro.md

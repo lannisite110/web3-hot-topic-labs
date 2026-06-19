@@ -1,0 +1,29 @@
+apiVersion: edu.web3/v1
+kind: PluginPackage
+metadata:
+  id: edu.hot.mev
+  name: MEV PBS Simulation Lab
+  version: 0.1.0
+  repo: web3-hot-topic-labs
+  compliance_tier: hot_topic
+
+spec:
+  coreVersion: ">=0.1.0 <0.2.0"
+  taskTypes:
+    - HOT_MEV_PBS_SIM
+  namespaces:
+    - ns-hot-sim
+  allowedChainIds:
+    - 11155111
+  frontend:
+    routePrefix: /labs/edu.hot.mev
+    entry: plugins/mev/frontend/plugin.ts
+  rules:
+    entry: plugins.rules.mev:evaluate
+  contracts:
+    - path: plugins/mev/contracts/MevPbsSim.huff
+      language: huff
+  k8s:
+    jobTemplate: k8s/overlays/ns-hot-sim/mev-job.yaml
+  docs:
+    - docs/tutorials/mev-intro.md

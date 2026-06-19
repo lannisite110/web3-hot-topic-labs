@@ -1,0 +1,11 @@
+/// @title MatchKernelDemo — 教学 Huff 撮合内核模板，仅测试网
+#define constant OWNER = 0x00
+
+#define macro CONSTRUCTOR() = takes (0) returns (0) {
+    caller          // [caller]
+    [OWNER] sstore  // store owner
+}
+
+#define macro DEPOSIT() = takes (0) returns (0) {
+    stop
+}

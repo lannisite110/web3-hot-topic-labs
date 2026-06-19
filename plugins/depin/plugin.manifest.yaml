@@ -1,0 +1,29 @@
+apiVersion: edu.web3/v1
+kind: PluginPackage
+metadata:
+  id: edu.hot.depin
+  name: DePIN Node Simulation Lab
+  version: 0.1.0
+  repo: web3-hot-topic-labs
+  compliance_tier: hot_topic
+
+spec:
+  coreVersion: ">=0.1.0 <0.2.0"
+  taskTypes:
+    - HOT_DEPIN_NODE_SIM
+  namespaces:
+    - ns-hot-sim
+  allowedChainIds:
+    - 11155111
+  frontend:
+    routePrefix: /labs/edu.hot.depin
+    entry: plugins/depin/frontend/plugin.ts
+  rules:
+    entry: plugins.rules.depin:evaluate
+  contracts:
+    - path: plugins/depin/contracts/DepinNode.rs
+      language: rust
+  k8s:
+    jobTemplate: k8s/overlays/ns-hot-sim/depin-job.yaml
+  docs:
+    - docs/tutorials/depin-intro.md

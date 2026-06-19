@@ -1,0 +1,29 @@
+apiVersion: edu.web3/v1
+kind: PluginPackage
+metadata:
+  id: edu.hot.rwa-edu
+  name: RWA Education Simulation Lab
+  version: 0.1.0
+  repo: web3-hot-topic-labs
+  compliance_tier: hot_topic
+
+spec:
+  coreVersion: ">=0.1.0 <0.2.0"
+  taskTypes:
+    - HOT_RWA_EDU_SIM
+  namespaces:
+    - ns-hot-sim
+  allowedChainIds:
+    - 11155111
+  frontend:
+    routePrefix: /labs/edu.hot.rwa-edu
+    entry: plugins/rwa-edu/frontend/plugin.ts
+  rules:
+    entry: plugins.rules.rwa_edu:evaluate
+  contracts:
+    - path: plugins/rwa-edu/contracts/RwaMappingDemo.sol
+      language: solidity
+  k8s:
+    jobTemplate: k8s/overlays/ns-hot-sim/rwa-edu-job.yaml
+  docs:
+    - docs/tutorials/rwa-edu-intro.md

@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: teal-compile
+  labels:
+    edu.web3/plugin-id: edu.hot.language-advisor
+    edu.web3/lang-group: algorand
+    edu.web3/compliance: testnet-only
+spec:
+  template:
+    metadata:
+      labels:
+        edu.web3/plugin-id: edu.hot.language-advisor
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: runner
+          image: edu/toolchain-algorand:0.1.0
+          command: ["python3", "-c", "import pyteal; print(pyteal.__version__)"]
+          env:
+            - name: CHAIN_ID
+              value: "11155111"
+            - name: EDU_LANG_GROUP
+              value: algorand

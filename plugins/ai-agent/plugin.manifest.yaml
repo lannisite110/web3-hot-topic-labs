@@ -1,0 +1,29 @@
+apiVersion: edu.web3/v1
+kind: PluginPackage
+metadata:
+  id: edu.hot.ai-agent
+  name: AI Agent Sandbox Lab
+  version: 0.1.0
+  repo: web3-hot-topic-labs
+  compliance_tier: hot_topic
+
+spec:
+  coreVersion: ">=0.1.0 <0.2.0"
+  taskTypes:
+    - HOT_AI_AGENT_SANDBOX
+  namespaces:
+    - ns-hot-sim
+  allowedChainIds:
+    - 11155111
+  frontend:
+    routePrefix: /labs/edu.hot.ai-agent
+    entry: plugins/ai-agent/frontend/plugin.ts
+  rules:
+    entry: plugins.rules.ai_agent:evaluate
+  contracts:
+    - path: plugins/ai-agent/contracts/AgentSandbox.sol
+      language: solidity
+  k8s:
+    jobTemplate: k8s/overlays/ns-hot-sim/ai-agent-job.yaml
+  docs:
+    - docs/tutorials/ai-agent-intro.md

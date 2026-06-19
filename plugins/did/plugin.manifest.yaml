@@ -1,0 +1,29 @@
+apiVersion: edu.web3/v1
+kind: PluginPackage
+metadata:
+  id: edu.hot.did
+  name: DID Privacy Demo Lab
+  version: 0.1.0
+  repo: web3-hot-topic-labs
+  compliance_tier: hot_topic
+
+spec:
+  coreVersion: ">=0.1.0 <0.2.0"
+  taskTypes:
+    - HOT_DID_PRIVACY_DEMO
+  namespaces:
+    - ns-hot-sim
+  allowedChainIds:
+    - 11155111
+  frontend:
+    routePrefix: /labs/edu.hot.did
+    entry: plugins/did/frontend/plugin.ts
+  rules:
+    entry: plugins.rules.did:evaluate
+  contracts:
+    - path: plugins/did/contracts/DidPrivacy.move
+      language: move
+  k8s:
+    jobTemplate: k8s/overlays/ns-hot-sim/did-job.yaml
+  docs:
+    - docs/tutorials/did-intro.md

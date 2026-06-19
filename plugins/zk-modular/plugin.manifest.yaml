@@ -1,0 +1,29 @@
+apiVersion: edu.web3/v1
+kind: PluginPackage
+metadata:
+  id: edu.hot.zk-modular
+  name: ZK Modular Rollup Lab
+  version: 0.1.0
+  repo: web3-hot-topic-labs
+  compliance_tier: hot_topic
+
+spec:
+  coreVersion: ">=0.1.0 <0.2.0"
+  taskTypes:
+    - HOT_ZK_ROLLUP_SIM
+  namespaces:
+    - ns-hot-zk
+  allowedChainIds:
+    - 11155111
+  frontend:
+    routePrefix: /labs/edu.hot.zk-modular
+    entry: plugins/zk-modular/frontend/plugin.ts
+  rules:
+    entry: plugins.rules.zk_modular:evaluate
+  contracts:
+    - path: plugins/zk-modular/contracts/ModularRollupDemo.sol
+      language: solidity
+  k8s:
+    jobTemplate: k8s/overlays/ns-hot-zk/zk-modular-job.yaml
+  docs:
+    - docs/tutorials/zk-modular-intro.md

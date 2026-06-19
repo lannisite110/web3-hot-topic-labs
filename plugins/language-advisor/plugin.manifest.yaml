@@ -1,0 +1,52 @@
+apiVersion: edu.web3/v1
+kind: PluginPackage
+metadata:
+  id: edu.hot.language-advisor
+  name: Smart Contract Language Advisor
+  version: 0.1.0
+  repo: web3-hot-topic-labs
+  compliance_tier: hot_topic
+
+spec:
+  coreVersion: ">=0.1.0 <0.2.0"
+  taskTypes:
+    - HOT_LANGUAGE_ADVISE
+    - HOT_MULTI_LANG_COMPILE
+  namespaces:
+    - ns-evm
+    - ns-solana
+    - ns-move
+    - ns-hot-zk
+    - ns-lang-btc
+    - ns-lang-flow
+    - ns-lang-algorand
+  allowedChainIds:
+    - 11155111
+    - 17000
+    - 80002
+    - 97
+    - devnet
+  frontend:
+    routePrefix: /labs/edu.hot.language-advisor
+    entry: plugins/frontend/plugin.ts
+  rules:
+    entry: plugins.rules.language_choice:evaluate
+  contracts:
+    - path: plugins/language-advisor/templates/GenericDeFi.sol
+      language: solidity
+    - path: plugins/language-advisor/templates/Vault.vy
+      language: vyper
+    - path: plugins/language-advisor/templates/MatchKernel.huff
+      language: huff
+    - path: plugins/language-advisor/templates/AnchorProgram.rs
+      language: rust
+    - path: plugins/language-advisor/templates/NftAsset.move
+      language: move
+    - path: plugins/language-advisor/templates/ZkRollup.cairo
+      language: cairo
+  k8s:
+    jobTemplate: k8s/overlays/ns-evm/multi-lang-compile-job.yaml
+  docs:
+    - docs/multi-language-toolchains.md
+    - docs/tutorials/language-advisor-intro.md
+    - plugins/rules/language-choice-rules.yaml

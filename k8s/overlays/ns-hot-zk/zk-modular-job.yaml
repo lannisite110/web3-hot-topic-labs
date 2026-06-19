@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zk-modular-sim
+  labels:
+    edu.web3/plugin-id: edu.hot.zk-modular
+    edu.web3/lang-group: zk
+    edu.web3/compliance: testnet-only
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        edu.web3/plugin-id: edu.hot.zk-modular
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: runner
+          image: edu/toolchain-zk:0.1.0
+          env:
+            - name: CHAIN_ID
+              value: "11155111"
+            - name: TASK_TYPE
+              value: "HOT_ZK_ROLLUP_SIM"
+            - name: EDU_LANG_GROUP
+              value: "zk"
+            - name: RPC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: testnet-rpc-sepolia
+                  key: rpc_url
+          command:
+            - sh
+            - -c
+            - |
+              echo "[testnet] plugin=edu.hot.zk-modular task=${TASK_TYPE} chain=${CHAIN_ID}"
+              echo "Simulation completed (educational only)"

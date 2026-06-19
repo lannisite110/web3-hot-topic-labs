@@ -1,0 +1,29 @@
+apiVersion: edu.web3/v1
+kind: PluginPackage
+metadata:
+  id: edu.hot.zk-circuit
+  name: ZK Circuit Compile Lab
+  version: 0.1.0
+  repo: web3-hot-topic-labs
+  compliance_tier: hot_topic
+
+spec:
+  coreVersion: ">=0.1.0 <0.2.0"
+  taskTypes:
+    - HOT_ZK_CIRCUIT_COMPILE
+  namespaces:
+    - ns-hot-zk
+  allowedChainIds:
+    - 11155111
+  frontend:
+    routePrefix: /labs/edu.hot.zk-circuit
+    entry: plugins/zk-circuit/frontend/plugin.ts
+  rules:
+    entry: plugins.rules.zk_circuit:evaluate
+  contracts:
+    - path: plugins/zk-circuit/contracts/ZkCircuit.cairo
+      language: cairo
+  k8s:
+    jobTemplate: k8s/overlays/ns-hot-zk/zk-circuit-job.yaml
+  docs:
+    - docs/tutorials/zk-circuit-intro.md

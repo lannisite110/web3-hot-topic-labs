@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: multi-lang-compile
+  labels:
+    edu.web3/plugin-id: edu.hot.language-advisor
+    edu.web3/lang-group: evm
+    edu.web3/compliance: testnet-only
+spec:
+  template:
+    metadata:
+      labels:
+        edu.web3/plugin-id: edu.hot.language-advisor
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: runner
+          image: edu/toolchain-evm:0.1.0
+          command: ["/entrypoint.sh", "solc", "--version"]
+          env:
+            - name: CHAIN_ID
+              value: "11155111"
+            - name: EDU_LANG_GROUP
+              value: evm
+            - name: RPC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: testnet-rpc-sepolia
+                  key: rpc_url

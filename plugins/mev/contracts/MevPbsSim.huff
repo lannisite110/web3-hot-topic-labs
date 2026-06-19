@@ -1,0 +1,8 @@
+/// MEV PBS demo — Huff template, testnet only
+#define constant COUNTER = 0x00
+#define macro INCREMENT() = takes (0) returns (0) {
+    [COUNTER] sload
+    1 add
+    [COUNTER] sstore
+    stop
+}

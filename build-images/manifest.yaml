@@ -1,0 +1,47 @@
+# 语言组 → 容器镜像注册表
+# 主库 container-manager 读取此文件（子库1 维护，主库只读挂载）
+
+version: "1.0.0"
+
+groups:
+  evm:
+    namespace: ns-evm
+    image: edu/toolchain-evm:0.1.0
+    tools: [solc, vyper, huff, foundry]
+    dockerfile: build-images/evm/Dockerfile
+
+  solana:
+    namespace: ns-solana
+    image: edu/toolchain-solana:0.1.0
+    tools: [rust, anchor]
+    dockerfile: build-images/solana/Dockerfile
+
+  move:
+    namespace: ns-move
+    image: edu/toolchain-move:0.1.0
+    tools: [aptos, sui]
+    dockerfile: build-images/move/Dockerfile
+
+  zk:
+    namespace: ns-hot-zk
+    image: edu/toolchain-zk:0.1.0
+    tools: [cairo, starknet-foundry]
+    dockerfile: build-images/zk/Dockerfile
+
+  btc:
+    namespace: ns-lang-btc
+    image: edu/toolchain-btc:0.1.0
+    tools: [clarity]
+    dockerfile: build-images/btc/Dockerfile
+
+  flow:
+    namespace: ns-lang-flow
+    image: edu/toolchain-flow:0.1.0
+    tools: [cadence]
+    dockerfile: build-images/flow/Dockerfile
+
+  algorand:
+    namespace: ns-lang-algorand
+    image: edu/toolchain-algorand:0.1.0
+    tools: [pyteal, teal]
+    dockerfile: build-images/algorand/Dockerfile
