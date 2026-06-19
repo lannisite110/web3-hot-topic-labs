@@ -56,7 +56,7 @@ bash ../web3-hot-topic-labs/scripts/joint-debug-smoke.sh
 
 ## 开发
 
-见 [AGENT_TASK.md](AGENT_TASK.md) · 批量生成脚本 `scripts/generate-labs.py`
+见 [TASK.md](TASK.md) · 批量生成脚本 `scripts/generate-labs.py`
 
 ## 合规
 

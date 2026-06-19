@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agent-1 第一阶段联合调试冒烟 — 需在主库 v0.1.0 后端已启动或本脚本自启栈
+# web3-hot-topic-labs 联合调试冒烟 — 需在主库后端已启动或本脚本自启栈
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -114,4 +114,4 @@ if curl -sf "http://127.0.0.1:${GATEWAY_PORT}/health" >/dev/null 2>&1; then
   echo "$RESP" | grep -q solidity
 fi
 
-echo "==> Agent-1 joint-debug smoke PASSED (11 plugins)"
+echo "==> web3-hot-topic-labs joint-debug smoke PASSED (11 plugins)"

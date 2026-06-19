@@ -1,4 +1,4 @@
-# Agent-1 任务书 · web3-hot-topic-labs
+# 任务书 · web3-hot-topic-labs
 
 > **图标**: `assets/icon.png`（全平台统一）  
 > **仓库**: `web3-hot-topic-labs`  
@@ -163,7 +163,7 @@ make compliance-check  # 在主库对子库路径扫描：bash ci/compliance/com
 ## 7. 完成报告格式
 
 ```markdown
-## Agent-1 交付报告
+## 交付报告
 - 插件数量: 10
 - manifest 列表: ...
 - 未实现项: ...

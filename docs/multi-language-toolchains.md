@@ -57,7 +57,7 @@ NetworkPolicy：禁止跨 Namespace 访问其他语言编译器 Pod
 
 ---
 
-## 5. Agent-1 交付清单
+## 5. 子库1 交付清单
 
 - [x] 7 个 `build-images/*/Dockerfile`（含 EVM vyper/huff）
 - [x] `build-images/manifest.yaml` 语言组 → 镜像 tag 映射
