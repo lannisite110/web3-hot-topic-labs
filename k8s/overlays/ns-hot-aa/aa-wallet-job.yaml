@@ -30,8 +30,19 @@ spec:
                   name: testnet-rpc-sepolia
                   key: rpc_url
           command:
-            - sh
-            - -c
+            - /entrypoint.sh
+            - bash
+            - -ec
             - |
-              echo "[testnet] plugin=edu.hot.aa-wallet task=${TASK_TYPE} chain=${CHAIN_ID}"
-              echo "Simulation completed (educational only)"
+              echo "==> HOT_AA_WALLET_SIM evm toolchain gate"
+              solc --version | head -1
+              cat > /tmp/AAWallet.sol <<'SOL'
+              pragma solidity ^0.8.20;
+              contract AAWalletDemo {
+                  address public owner;
+                  constructor(address o) { owner = o; }
+              }
+              SOL
+              solc --optimize --combined-json bin /tmp/AAWallet.sol > /tmp/aa-out.json
+              test -s /tmp/aa-out.json
+              echo "AA wallet compile gate OK (testnet-only)"

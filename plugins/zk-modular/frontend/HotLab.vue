@@ -1,61 +1,45 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { computed, ref } from 'vue'
+import { useLabSimulate } from '../../frontend/shared/useLabSimulate'
+import { parseHints, hintNumber } from '../../frontend/shared/parseHints'
 
-const param = ref('8')
-const loading = ref(false)
-const error = ref('')
-const result = ref<Record<string, unknown> | null>(null)
-const status = ref<Record<string, unknown> | null>(null)
-const report = ref<Record<string, unknown> | null>(null)
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const batchSize = ref(8)
+const { loading, error, result, taskStatus, taskReport, runSimulate, parseEvaluation } =
+  useLabSimulate('edu.hot.zk-modular')
 
-const PLUGIN_ID = 'edu.hot.zk-modular'
+const evaluation = computed(() => parseEvaluation(result.value?.evaluation))
+const hints = computed(() => parseHints(evaluation.value?.audit_hints))
 
-async function runSimulate() {
-  loading.value = true
-  error.value = ''
-  result.value = null
-  status.value = null
-  report.value = null
-  if (pollTimer) clearInterval(pollTimer)
-  try {
-    const res = await fetch(`/api/v1/labs/${PLUGIN_ID}/simulate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_prompt: 'ZK 电路与 Rollup 批次提交教学仿真（测试网 mock verifier）',
-        params: { batch_size: param.value },
-        allowed_chain_ids: [11155111],
-      }),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || res.statusText)
-    result.value = data
-    const taskId = (data.task as Record<string, unknown> | undefined)?.id as string | undefined
-    if (taskId) startPoll(taskId)
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e)
-  } finally {
-    loading.value = false
-  }
+const pipeline = [
+  { id: 'collect', label: '收集 L2 交易', icon: '📥' },
+  { id: 'prove', label: 'Mock 证明生成', icon: '⚡' },
+  { id: 'submit', label: '提交 Rollup 批次', icon: '📦' },
+  { id: 'anchor', label: 'L1 锚定 (Sepolia)', icon: '🔗' },
+]
+
+const demoBatches = computed(() => {
+  const n = hintNumber(hints.value, 'batch_size', Number(batchSize.value) || 8)
+  const root = hints.value.mock_batch_root ?? '0x…pending'
+  return Array.from({ length: Math.min(n, 6) }, (_, i) => ({
+    id: i + 1,
+    txs: (Number(hints.value.tx_count) || n * 12) / n,
+    root: i === n - 1 ? root : `0xbatch${i + 1}…demo`,
+    status: i < n - 1 ? 'finalized' : taskStatus.value === 'completed' ? 'finalized' : 'proving',
+  }))
+})
+
+const activeStep = computed(() => {
+  if (taskStatus.value === 'completed') return 3
+  if (taskStatus.value === 'running' || loading.value) return 2
+  if (result.value) return 1
+  return 0
+})
+
+function submit() {
+  runSimulate('ZK 电路与 Rollup 批次提交教学仿真（测试网 mock verifier）', {
+    batch_size: String(batchSize.value),
+  })
 }
-
-function startPoll(taskId: string) {
-  pollTimer = setInterval(async () => {
-    try {
-      const s = await fetch(`/api/v1/labs/${PLUGIN_ID}/status/${taskId}`)
-      status.value = await s.json()
-      const st = (status.value?.status as string) || ''
-      if (st === 'completed' || st === 'failed') {
-        if (pollTimer) clearInterval(pollTimer)
-        const r = await fetch(`/api/v1/labs/${PLUGIN_ID}/report/${taskId}`)
-        report.value = await r.json()
-      }
-    } catch { /* ignore poll errors */ }
-  }, 1500)
-}
-
-onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 </script>
 
 <template>
@@ -64,33 +48,90 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
       <img src="/assets/icon.png" alt="" width="32" height="32" />
       <div>
         <h1>ZK 模块化 Rollup 教学</h1>
-        <p class="muted">edu.hot.zk-modular · 测试网教学 only</p>
+        <p class="muted">Mock Verifier · Sepolia 测试网 · 禁止生产 Rollup</p>
       </div>
     </header>
-    <div class="card">
-      <label>Rollup 批次大小
-        <input v-model="param" />
-      </label>
-      <button :disabled="loading" @click="runSimulate">
-        { loading ? '提交中…' : '提交仿真实验' }
-      </button>
-      <p v-if="error" class="error">{ error }</p>
+
+    <div class="lab-grid">
+      <div class="card">
+        <h2>批次参数</h2>
+        <label>
+          Rollup 批次大小 (1–64)
+          <input v-model.number="batchSize" type="number" min="1" max="64" />
+        </label>
+        <button :disabled="loading" @click="submit">
+          {{ loading ? '提交中…' : '提交批次仿真实验' }}
+        </button>
+        <p v-if="taskStatus" class="status">任务: {{ taskStatus }}</p>
+        <p v-if="error" class="error">{{ error }}</p>
+      </div>
+
+      <div class="card">
+        <h2>Rollup 流水线</h2>
+        <ol class="pipeline">
+          <li
+            v-for="(step, idx) in pipeline"
+            :key="step.id"
+            :class="{ done: idx <= activeStep, current: idx === activeStep }"
+          >
+            <span class="step-icon">{{ step.icon }}</span>
+            <strong>{{ step.label }}</strong>
+          </li>
+        </ol>
+        <p v-if="hints.verifier" class="muted">Verifier: {{ hints.verifier }}</p>
+      </div>
+
+      <div class="card">
+        <h2>批次列表 (演示)</h2>
+        <ul class="batch-list">
+          <li v-for="b in demoBatches" :key="b.id">
+            <div class="batch-row">
+              <span>#{{ b.id }}</span>
+              <span class="tag" :class="b.status">{{ b.status }}</span>
+            </div>
+            <code>{{ b.root }}</code>
+            <small class="muted">~{{ Math.round(b.txs) }} txs</small>
+          </li>
+        </ul>
+        <p v-if="hints.l1_anchor" class="muted anchor">L1: {{ hints.l1_anchor }}</p>
+      </div>
     </div>
-    <pre v-if="result" class="block">simulate: { JSON.stringify(result, null, 2) }</pre>
-    <pre v-if="status" class="block">status: { JSON.stringify(status, null, 2) }</pre>
-    <pre v-if="report" class="block">report: { JSON.stringify(report, null, 2) }</pre>
+
+    <details v-if="taskReport || result" class="raw">
+      <summary>任务报告 JSON</summary>
+      <pre>{{ JSON.stringify(taskReport ?? result, null, 2) }}</pre>
+    </details>
   </section>
 </template>
 
 <style scoped>
 .lab-panel { padding: 1rem; }
 .lab-header { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem; }
-.muted { color: #64748b; font-size: 0.875rem; }
+.lab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
 .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; }
-label { display: block; }
-input { display: block; width: 100%; margin: 0.5rem 0; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; }
-button { padding: 0.5rem 1rem; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
-button:disabled { opacity: 0.6; }
+.card h2 { margin: 0 0 0.75rem; font-size: 1rem; }
+.muted { color: #64748b; font-size: 0.875rem; }
+.pipeline { list-style: none; padding: 0; margin: 0; }
+.pipeline li {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0; border-left: 3px solid #e2e8f0; padding-left: 0.75rem; margin-bottom: 0.35rem;
+}
+.pipeline li.done { border-left-color: #22c55e; color: #15803d; }
+.pipeline li.current { border-left-color: #2563eb; font-weight: 600; }
+.step-icon { font-size: 1.1rem; }
+.batch-list { list-style: none; padding: 0; margin: 0; }
+.batch-list li { margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e2e8f0; }
+.batch-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
+.tag { font-size: 0.75rem; padding: 0.15rem 0.45rem; border-radius: 4px; text-transform: uppercase; }
+.tag.finalized { background: #dcfce7; color: #166534; }
+.tag.proving { background: #dbeafe; color: #1d4ed8; }
+code { font-family: monospace; font-size: 0.78rem; word-break: break-all; color: #0f766e; }
+.status { color: #2563eb; font-size: 0.875rem; margin-top: 0.5rem; }
 .error { color: #dc2626; }
-.block { margin-top: 1rem; background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow: auto; font-size: 0.8rem; }
+.anchor { margin-top: 0.75rem; }
+input { display: block; width: 100%; margin: 0.5rem 0; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; }
+button { margin-top: 0.5rem; padding: 0.5rem 1rem; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+button:disabled { opacity: 0.6; }
+.raw { margin-top: 1rem; }
+.raw pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow: auto; font-size: 0.78rem; }
 </style>

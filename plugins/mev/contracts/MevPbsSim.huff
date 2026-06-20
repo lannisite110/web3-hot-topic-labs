@@ -1,8 +1,9 @@
-/// MEV PBS demo — Huff template, testnet only
-#define constant COUNTER = 0x00
-#define macro INCREMENT() = takes (0) returns (0) {
-    [COUNTER] sload
+/// MEV PBS — Huff 教学 stub（slot 计数），配合 Solidity MevPbsAuction 对照学习
+#define constant SLOT_COUNTER = 0x00
+
+#define macro SUBMIT_BID() = takes (0) returns (0) {
+    [SLOT_COUNTER] sload
     1 add
-    [COUNTER] sstore
+    [SLOT_COUNTER] sstore
     stop
 }

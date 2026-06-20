@@ -28,6 +28,7 @@ class RuleOutput:
     toolchain_group: str | None = None
     tools: list[str] | None = None
     reason: str | None = None
+    suggested_lab: str | None = None
 
 
 def _load_rules() -> dict:
@@ -90,6 +91,8 @@ def evaluate(inp: RuleInput) -> RuleOutput:
         "algorand": "ns-lang-algorand",
     }
     group = choice["toolchain_group"]
+    suggested = lab_map.get(lang, "edu.hot.language-advisor")
+    match_reason = choice.get("reason", "")
 
     return RuleOutput(
         recommended_template=template_map.get(lang, template_map["solidity"]),
@@ -98,12 +101,14 @@ def evaluate(inp: RuleInput) -> RuleOutput:
             f"toolchain_group={group}",
             f"namespace={namespace_map.get(group, 'ns-evm')}",
             f"tools={','.join(choice['tools'])}",
-            f"suggested_lab={lab_map.get(lang, 'edu.hot.language-advisor')}",
+            f"suggested_lab={suggested}",
+            f"match_reason={match_reason}",
             f"image=edu/toolchain-{group}:0.1.0",
             "testnet-only deployment",
         ],
         compliance_passed=True,
         toolchain_group=group,
         tools=choice["tools"],
-        reason=choice.get("reason", ""),
+        reason=match_reason,
+        suggested_lab=suggested,
     )

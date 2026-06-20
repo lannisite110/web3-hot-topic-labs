@@ -8,8 +8,9 @@
 
 ## 文档
 
-- [学习路径](docs/LEARNING_PATH.md)
-- [快速部署](docs/QUICK_DEPLOY.md)
+- [热点完整学习路径](docs/HOT_TOPIC_LEARNING_PATH.md) · [教程索引](docs/tutorials/README.md)
+- [学习路径（子库）](docs/LEARNING_PATH.md) · [快速部署](docs/QUICK_DEPLOY.md)
+- [分阶段工程路线](docs/HOT_TOPIC_PHASES.md)
 
 Web3 前沿热点**教学插件包**（子库1）。
 

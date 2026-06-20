@@ -30,8 +30,22 @@ spec:
                   name: testnet-rpc-sepolia
                   key: rpc_url
           command:
-            - sh
-            - -c
+            - /entrypoint.sh
+            - bash
+            - -ec
             - |
-              echo "[testnet] plugin=edu.hot.dao task=${TASK_TYPE} chain=${CHAIN_ID}"
-              echo "Simulation completed (educational only)"
+              echo "==> HOT_DAO_VOTE_SIM evm toolchain + vote compile gate"
+              solc --version | head -1
+              cat > /tmp/DaoVote.sol <<'SOL'
+              // SPDX-License-Identifier: MIT
+              pragma solidity ^0.8.20;
+              contract DaoVoteDemo {
+                  mapping(uint256 => uint256) public yesVotes;
+                  function vote(uint256 id, bool support) external {
+                      if (support) yesVotes[id] += 1;
+                  }
+              }
+              SOL
+              solc --optimize --combined-json bin /tmp/DaoVote.sol > /tmp/dao-out.json
+              test -s /tmp/dao-out.json
+              echo "DAO vote compile OK (testnet-only)"

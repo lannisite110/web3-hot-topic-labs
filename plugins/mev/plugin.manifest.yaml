@@ -3,7 +3,7 @@ kind: PluginPackage
 metadata:
   id: edu.hot.mev
   name: MEV PBS Simulation Lab
-  version: 0.3.0
+  version: 0.4.0
   repo: web3-hot-topic-labs
   compliance_tier: hot_topic
 
@@ -21,6 +21,8 @@ spec:
   rules:
     entry: plugins.rules.mev:evaluate
   contracts:
+    - path: plugins/mev/contracts/MevPbsAuction.sol
+      language: solidity
     - path: plugins/mev/contracts/MevPbsSim.huff
       language: huff
   k8s:

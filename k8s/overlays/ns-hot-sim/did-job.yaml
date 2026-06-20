@@ -30,8 +30,11 @@ spec:
                   name: testnet-rpc-sepolia
                   key: rpc_url
           command:
-            - sh
-            - -c
+            - bash
+            - -ec
             - |
-              echo "[testnet] plugin=edu.hot.did task=${TASK_TYPE} chain=${CHAIN_ID}"
-              echo "Simulation completed (educational only)"
+              echo "==> HOT_DID_PRIVACY_DEMO move toolchain gate"
+              aptos --version | head -1
+              sui --version | head -1
+              echo "module ref: DidPrivacy.move (selective_disclosure)"
+              echo "move toolchain gate OK (testnet-only)"

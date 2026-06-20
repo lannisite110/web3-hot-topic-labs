@@ -30,8 +30,9 @@ spec:
                   name: testnet-rpc-sepolia
                   key: rpc_url
           command:
-            - sh
-            - -c
+            - bash
+            - -ec
             - |
-              echo "[testnet] plugin=edu.hot.zk-circuit task=${TASK_TYPE} chain=${CHAIN_ID}"
-              echo "Simulation completed (educational only)"
+              echo "==> HOT_ZK_CIRCUIT_COMPILE zk toolchain gate"
+              scarb --version | head -1
+              echo "cairo circuit compile toolchain gate OK (testnet-only)"

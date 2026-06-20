@@ -1,61 +1,37 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { computed, ref } from 'vue'
+import { useLabSimulate } from '../../frontend/shared/useLabSimulate'
+import { parseHints, hintNumber } from '../../frontend/shared/parseHints'
 
-const param = ref('12')
-const loading = ref(false)
-const error = ref('')
-const result = ref<Record<string, unknown> | null>(null)
-const status = ref<Record<string, unknown> | null>(null)
-const report = ref<Record<string, unknown> | null>(null)
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const blockSlots = ref(12)
+const builderCount = ref(3)
+const slotIndex = ref(0)
 
-const PLUGIN_ID = 'edu.hot.mev'
+const demoBuilders = computed(() =>
+  Array.from({ length: builderCount.value }, (_, i) => ({
+    id: `builder-${i}`,
+    bid: 10 + ((i * 17 + slotIndex.value) % 80),
+  })).sort((a, b) => b.bid - a.bid),
+)
 
-async function runSimulate() {
-  loading.value = true
-  error.value = ''
-  result.value = null
-  status.value = null
-  report.value = null
-  if (pollTimer) clearInterval(pollTimer)
-  try {
-    const res = await fetch(`/api/v1/labs/${PLUGIN_ID}/simulate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_prompt: 'Proposer-Builder 分离算法教学仿真（非套利机器人）',
-        params: { block_slots: param.value },
-        allowed_chain_ids: [11155111],
-      }),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || res.statusText)
-    result.value = data
-    const taskId = (data.task as Record<string, unknown> | undefined)?.id as string | undefined
-    if (taskId) startPoll(taskId)
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e)
-  } finally {
-    loading.value = false
-  }
+const { loading, error, result, taskStatus, taskReport, runSimulate, parseEvaluation } =
+  useLabSimulate('edu.hot.mev')
+
+const evaluation = computed(() => parseEvaluation(result.value?.evaluation))
+const hints = computed(() => parseHints(evaluation.value?.audit_hints))
+
+const winner = computed(() => hints.value.winning_builder ?? demoBuilders.value[0]?.id)
+const winningBid = computed(() =>
+  hintNumber(hints.value, 'winning_bid_gwei', demoBuilders.value[0]?.bid ?? 0),
+)
+
+function submit() {
+  runSimulate('Proposer-Builder 分离算法教学仿真（非套利机器人）', {
+    block_slots: blockSlots.value,
+    builder_count: builderCount.value,
+    slot_index: slotIndex.value,
+  })
 }
-
-function startPoll(taskId: string) {
-  pollTimer = setInterval(async () => {
-    try {
-      const s = await fetch(`/api/v1/labs/${PLUGIN_ID}/status/${taskId}`)
-      status.value = await s.json()
-      const st = (status.value?.status as string) || ''
-      if (st === 'completed' || st === 'failed') {
-        if (pollTimer) clearInterval(pollTimer)
-        const r = await fetch(`/api/v1/labs/${PLUGIN_ID}/report/${taskId}`)
-        report.value = await r.json()
-      }
-    } catch { /* ignore poll errors */ }
-  }, 1500)
-}
-
-onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 </script>
 
 <template>
@@ -64,33 +40,77 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
       <img src="/assets/icon.png" alt="" width="32" height="32" />
       <div>
         <h1>MEV PBS 博弈仿真</h1>
-        <p class="muted">edu.hot.mev · 测试网教学 only</p>
+        <p class="muted">Proposer-Builder 分离 · 非套利机器人 · Sepolia only</p>
       </div>
     </header>
-    <div class="card">
-      <label>模拟区块槽位
-        <input v-model="param" />
-      </label>
-      <button :disabled="loading" @click="runSimulate">
-        { loading ? '提交中…' : '提交仿真实验' }
-      </button>
-      <p v-if="error" class="error">{ error }</p>
+
+    <div class="lab-grid">
+      <div class="card">
+        <h2>Slot 参数</h2>
+        <label>区块槽位数 <input v-model.number="blockSlots" type="number" min="1" max="32" /></label>
+        <label>Builder 数量 <input v-model.number="builderCount" type="number" min="2" max="8" /></label>
+        <label>当前 slot 索引 <input v-model.number="slotIndex" type="number" min="0" /></label>
+        <button :disabled="loading" @click="submit">{{ loading ? '仿真中…' : '运行 PBS 拍卖仿真' }}</button>
+        <p v-if="taskStatus" class="status">任务: {{ taskStatus }}</p>
+        <p v-if="error" class="error">{{ error }}</p>
+      </div>
+
+      <div class="card">
+        <h2>Builder 出价 (演示)</h2>
+        <table class="bid-table">
+          <thead><tr><th>Builder</th><th>出价 (gwei)</th></tr></thead>
+          <tbody>
+            <tr v-for="b in demoBuilders" :key="b.id" :class="{ win: b.id === winner }">
+              <td>{{ b.id }}</td>
+              <td>{{ b.bid }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="win-line">Proposer 选择: <strong>{{ winner }}</strong> · {{ winningBid }} gwei</p>
+        <p v-if="hints.pbs_mode" class="muted">模式: {{ hints.pbs_mode }}</p>
+      </div>
+
+      <div class="card">
+        <h2>PBS 流程</h2>
+        <ol class="flow">
+          <li>Builders 对 slot 提交 bid</li>
+          <li>Proposer 收集 bid 并选最高</li>
+          <li>选中 Builder 构建区块</li>
+          <li>Proposer 广播（测试网演示）</li>
+        </ol>
+        <p class="muted">Solidity: <code>MevPbsAuction.sol</code></p>
+        <p class="warn">禁止: 套利机器人 / 主网抢跑</p>
+      </div>
     </div>
-    <pre v-if="result" class="block">simulate: { JSON.stringify(result, null, 2) }</pre>
-    <pre v-if="status" class="block">status: { JSON.stringify(status, null, 2) }</pre>
-    <pre v-if="report" class="block">report: { JSON.stringify(report, null, 2) }</pre>
+
+    <details v-if="taskReport || result" class="raw">
+      <summary>任务报告 JSON</summary>
+      <pre>{{ JSON.stringify(taskReport ?? result, null, 2) }}</pre>
+    </details>
   </section>
 </template>
 
 <style scoped>
 .lab-panel { padding: 1rem; }
 .lab-header { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem; }
-.muted { color: #64748b; font-size: 0.875rem; }
+.lab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
 .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; }
-label { display: block; }
-input { display: block; width: 100%; margin: 0.5rem 0; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; }
-button { padding: 0.5rem 1rem; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
-button:disabled { opacity: 0.6; }
+.card h2 { margin: 0 0 0.75rem; font-size: 1rem; }
+label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; }
+input { display: block; width: 100%; margin-top: 0.25rem; padding: 0.45rem; border: 1px solid #cbd5e1; border-radius: 4px; }
+.bid-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.bid-table th, .bid-table td { border: 1px solid #e2e8f0; padding: 0.35rem 0.5rem; text-align: left; }
+.bid-table tr.win { background: #fef9c3; font-weight: 600; }
+.win-line { margin-top: 0.75rem; color: #854d0e; }
+.flow { padding-left: 1.25rem; margin: 0; }
+.flow li { margin-bottom: 0.35rem; }
+.warn { color: #b45309; font-size: 0.875rem; margin-top: 0.5rem; }
+.muted { color: #64748b; font-size: 0.875rem; }
+code { font-family: monospace; font-size: 0.8rem; }
+.status { color: #2563eb; font-size: 0.875rem; margin-top: 0.5rem; }
 .error { color: #dc2626; }
-.block { margin-top: 1rem; background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow: auto; font-size: 0.8rem; }
+button { margin-top: 0.5rem; padding: 0.5rem 1rem; width: 100%; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+button:disabled { opacity: 0.6; }
+.raw { margin-top: 1rem; }
+.raw pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow: auto; font-size: 0.78rem; }
 </style>

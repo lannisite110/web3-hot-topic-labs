@@ -30,8 +30,10 @@ spec:
                   name: testnet-rpc-sepolia
                   key: rpc_url
           command:
-            - sh
-            - -c
+            - bash
+            - -ec
             - |
-              echo "[testnet] plugin=edu.hot.zk-modular task=${TASK_TYPE} chain=${CHAIN_ID}"
-              echo "Simulation completed (educational only)"
+              echo "==> HOT_ZK_ROLLUP_SIM zk toolchain gate"
+              scarb --version | head -1
+              snforge --version 2>/dev/null | head -1 || echo "snforge: optional"
+              echo "cairo/zk rollup toolchain gate OK (testnet-only)"

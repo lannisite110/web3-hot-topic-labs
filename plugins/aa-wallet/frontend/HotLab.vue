@@ -1,61 +1,48 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { computed, ref } from 'vue'
+import { useLabSimulate } from '../../frontend/shared/useLabSimulate'
+import { parseHints } from '../../frontend/shared/parseHints'
 
-const param = ref('0x0000000000000000000000000000000000000001')
-const loading = ref(false)
-const error = ref('')
-const result = ref<Record<string, unknown> | null>(null)
-const status = ref<Record<string, unknown> | null>(null)
-const report = ref<Record<string, unknown> | null>(null)
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const owner = ref('0x0000000000000000000000000000000000000001')
+const callData = ref('0xa9059cbb…transfer(demo)')
+const currentStep = ref('build')
 
-const PLUGIN_ID = 'edu.hot.aa-wallet'
+const flowSteps = [
+  { id: 'build', label: '构建 UserOp', desc: '打包 callData、nonce、gas' },
+  { id: 'sign', label: 'Owner 签名', desc: 'EOA / 会话密钥签名' },
+  { id: 'bundle', label: 'Bundler 提交', desc: '内存池 / 公共 Bundler' },
+  { id: 'validate', label: 'EntryPoint 校验', desc: 'validateUserOp (4337)' },
+  { id: 'execute', label: '链上执行', desc: 'executeUserOp 完成状态变更' },
+]
 
-async function runSimulate() {
-  loading.value = true
-  error.value = ''
-  result.value = null
-  status.value = null
-  report.value = null
-  if (pollTimer) clearInterval(pollTimer)
-  try {
-    const res = await fetch(`/api/v1/labs/${PLUGIN_ID}/simulate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_prompt: 'ERC-4337 风格 AA 钱包测试网部署演示',
-        params: { owner: param.value },
-        allowed_chain_ids: [11155111],
-      }),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || res.statusText)
-    result.value = data
-    const taskId = (data.task as Record<string, unknown> | undefined)?.id as string | undefined
-    if (taskId) startPoll(taskId)
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e)
-  } finally {
-    loading.value = false
-  }
+const { loading, error, result, taskStatus, taskReport, runSimulate, parseEvaluation } =
+  useLabSimulate('edu.hot.aa-wallet')
+
+const evaluation = computed(() => parseEvaluation(result.value?.evaluation))
+const hints = computed(() => parseHints(evaluation.value?.audit_hints))
+
+const completedSteps = computed(() => {
+  const raw = hints.value.aa_flow_completed
+  if (raw) return raw.split(',')
+  if (taskStatus.value === 'completed') return flowSteps.map((s) => s.id)
+  return [currentStep.value]
+})
+
+const userOpHash = computed(
+  () => hints.value.user_op_hash ?? '0x…（提交后生成）',
+)
+
+function selectStep(stepId: string) {
+  currentStep.value = stepId
 }
 
-function startPoll(taskId: string) {
-  pollTimer = setInterval(async () => {
-    try {
-      const s = await fetch(`/api/v1/labs/${PLUGIN_ID}/status/${taskId}`)
-      status.value = await s.json()
-      const st = (status.value?.status as string) || ''
-      if (st === 'completed' || st === 'failed') {
-        if (pollTimer) clearInterval(pollTimer)
-        const r = await fetch(`/api/v1/labs/${PLUGIN_ID}/report/${taskId}`)
-        report.value = await r.json()
-      }
-    } catch { /* ignore poll errors */ }
-  }, 1500)
+function submit() {
+  runSimulate('ERC-4337 风格 AA 钱包测试网部署演示', {
+    owner: owner.value,
+    call_data: callData.value,
+    aa_flow_step: currentStep.value,
+  })
 }
-
-onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 </script>
 
 <template>
@@ -64,33 +51,119 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
       <img src="/assets/icon.png" alt="" width="32" height="32" />
       <div>
         <h1>账户抽象 AA 钱包教学</h1>
-        <p class="muted">edu.hot.aa-wallet · 测试网教学 only</p>
+        <p class="muted">ERC-4337 风格 · Mock EntryPoint · Sepolia only</p>
       </div>
     </header>
-    <div class="card">
-      <label>Owner 地址（演示）
-        <input v-model="param" />
-      </label>
-      <button :disabled="loading" @click="runSimulate">
-        { loading ? '提交中…' : '提交仿真实验' }
-      </button>
-      <p v-if="error" class="error">{ error }</p>
+
+    <div class="lab-grid">
+      <div class="card">
+        <h2>UserOp 参数</h2>
+        <label>
+          Smart Account Owner
+          <input v-model="owner" />
+        </label>
+        <label>
+          callData (演示)
+          <input v-model="callData" />
+        </label>
+        <label>
+          模拟执行到哪一步
+          <select v-model="currentStep">
+            <option v-for="s in flowSteps" :key="s.id" :value="s.id">{{ s.label }}</option>
+          </select>
+        </label>
+        <button :disabled="loading" @click="submit">
+          {{ loading ? '仿真中…' : '提交 AA 流程仿真' }}
+        </button>
+        <p v-if="taskStatus" class="status">任务: {{ taskStatus }}</p>
+        <p v-if="error" class="error">{{ error }}</p>
+      </div>
+
+      <div class="card span-2">
+        <h2>4337 流程</h2>
+        <div class="flow-track">
+          <button
+            v-for="(step, idx) in flowSteps"
+            :key="step.id"
+            type="button"
+            class="flow-step"
+            :class="{
+              done: completedSteps.includes(step.id),
+              current: currentStep === step.id,
+            }"
+            @click="selectStep(step.id)"
+          >
+            <span class="num">{{ idx + 1 }}</span>
+            <div>
+              <strong>{{ step.label }}</strong>
+              <p class="muted">{{ step.desc }}</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>UserOp 摘要</h2>
+        <p><strong>Hash</strong></p>
+        <code class="hash">{{ userOpHash }}</code>
+        <p v-if="hints.entry_point" class="muted">EntryPoint: {{ hints.entry_point }}</p>
+        <p v-if="hints.owner" class="muted">Owner: {{ hints.owner }}</p>
+        <p v-if="evaluation?.recommended_template" class="muted">
+          模板: {{ evaluation.recommended_template }}
+        </p>
+      </div>
     </div>
-    <pre v-if="result" class="block">simulate: { JSON.stringify(result, null, 2) }</pre>
-    <pre v-if="status" class="block">status: { JSON.stringify(status, null, 2) }</pre>
-    <pre v-if="report" class="block">report: { JSON.stringify(report, null, 2) }</pre>
+
+    <details v-if="taskReport || result" class="raw">
+      <summary>任务报告 JSON</summary>
+      <pre>{{ JSON.stringify(taskReport ?? result, null, 2) }}</pre>
+    </details>
   </section>
 </template>
 
 <style scoped>
 .lab-panel { padding: 1rem; }
 .lab-header { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem; }
-.muted { color: #64748b; font-size: 0.875rem; }
+.lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.card.span-2 { grid-column: span 1; }
+@media (min-width: 720px) {
+  .card.span-2 { grid-column: span 2; }
+}
 .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; }
-label { display: block; }
-input { display: block; width: 100%; margin: 0.5rem 0; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; }
-button { padding: 0.5rem 1rem; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
-button:disabled { opacity: 0.6; }
+.card h2 { margin: 0 0 0.75rem; font-size: 1rem; }
+label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; }
+input, select {
+  display: block; width: 100%; margin-top: 0.25rem;
+  padding: 0.45rem; border: 1px solid #cbd5e1; border-radius: 4px;
+}
+.flow-track { display: flex; flex-direction: column; gap: 0.5rem; }
+.flow-step {
+  display: flex; gap: 0.75rem; align-items: flex-start;
+  text-align: left; padding: 0.65rem; border: 1px solid #e2e8f0;
+  border-radius: 8px; background: #fff; cursor: pointer;
+}
+.flow-step.done { border-color: #86efac; background: #f0fdf4; }
+.flow-step.current { border-color: #93c5fd; background: #eff6ff; box-shadow: 0 0 0 2px #bfdbfe; }
+.flow-step .num {
+  width: 1.75rem; height: 1.75rem; border-radius: 999px;
+  background: #1e293b; color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; flex-shrink: 0;
+}
+.flow-step.done .num { background: #16a34a; }
+.flow-step p { margin: 0.15rem 0 0; }
+.hash { display: block; word-break: break-all; font-size: 0.78rem; color: #0f766e; margin: 0.5rem 0; }
+.muted { color: #64748b; font-size: 0.875rem; }
+.status { color: #2563eb; font-size: 0.875rem; margin-top: 0.5rem; }
 .error { color: #dc2626; }
-.block { margin-top: 1rem; background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow: auto; font-size: 0.8rem; }
+button:not(.flow-step) {
+  margin-top: 0.5rem; padding: 0.5rem 1rem; width: 100%;
+  background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer;
+}
+button:disabled { opacity: 0.6; }
+.raw { margin-top: 1rem; }
+.raw pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow: auto; font-size: 0.78rem; }
 </style>

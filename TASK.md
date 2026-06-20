@@ -10,6 +10,8 @@
 
 ## 1. 你的目标
 
+> 分阶段深化见 [docs/HOT_TOPIC_PHASES.md](docs/HOT_TOPIC_PHASES.md)（Phase 0：composable + Vue 修复已完成）
+
 ### 1A. 多语言合约执行层（7 语言组，环境完全隔离）
 
 见 [docs/multi-language-toolchains.md](docs/multi-language-toolchains.md)。

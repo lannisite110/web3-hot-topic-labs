@@ -30,8 +30,10 @@ spec:
                   name: testnet-rpc-sepolia
                   key: rpc_url
           command:
-            - sh
-            - -c
+            - bash
+            - -ec
             - |
-              echo "[testnet] plugin=edu.hot.depin task=${TASK_TYPE} chain=${CHAIN_ID}"
-              echo "Simulation completed (educational only)"
+              echo "==> HOT_DEPIN_NODE_SIM solana toolchain gate"
+              rustc --version | head -1
+              anchor --version | head -1
+              echo "solana/anchor toolchain gate OK (testnet-only)"

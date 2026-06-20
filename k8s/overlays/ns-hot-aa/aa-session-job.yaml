@@ -30,8 +30,16 @@ spec:
                   name: testnet-rpc-sepolia
                   key: rpc_url
           command:
-            - sh
-            - -c
+            - /entrypoint.sh
+            - bash
+            - -ec
             - |
-              echo "[testnet] plugin=edu.hot.aa-session task=${TASK_TYPE} chain=${CHAIN_ID}"
-              echo "Simulation completed (educational only)"
+              echo "==> HOT_AA_SESSION_KEY_DEMO evm toolchain gate"
+              solc --version | head -1
+              cat > /tmp/Session.sol <<'SOL'
+              pragma solidity ^0.8.20;
+              contract SessionKeyDemo { mapping(bytes32 => uint256) public expiry; }
+              SOL
+              solc --optimize --combined-json bin /tmp/Session.sol > /tmp/out.json
+              test -s /tmp/out.json
+              echo "session key compile gate OK (testnet-only)"

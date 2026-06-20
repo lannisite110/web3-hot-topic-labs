@@ -30,8 +30,21 @@ spec:
                   name: testnet-rpc-sepolia
                   key: rpc_url
           command:
-            - sh
-            - -c
+            - /entrypoint.sh
+            - bash
+            - -ec
             - |
-              echo "[testnet] plugin=edu.hot.mev task=${TASK_TYPE} chain=${CHAIN_ID}"
-              echo "Simulation completed (educational only)"
+              echo "==> HOT_MEV_PBS_SIM evm toolchain + PBS compile gate"
+              solc --version | head -1
+              huff --version 2>/dev/null | head -1 || echo "huff: skipped"
+              cat > /tmp/MevPbsAuction.sol <<'SOL'
+              // SPDX-License-Identifier: MIT
+              pragma solidity ^0.8.20;
+              contract MevPbsAuction {
+                  mapping(uint256 => uint256) public slotBids;
+                  function submitBid(uint256 slot) external payable { slotBids[slot] += msg.value; }
+              }
+              SOL
+              solc --optimize --combined-json bin /tmp/MevPbsAuction.sol > /tmp/pbs-out.json
+              test -s /tmp/pbs-out.json
+              echo "PBS solidity compile OK (testnet-only)"

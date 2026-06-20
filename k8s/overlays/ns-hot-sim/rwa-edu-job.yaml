@@ -30,8 +30,16 @@ spec:
                   name: testnet-rpc-sepolia
                   key: rpc_url
           command:
-            - sh
-            - -c
+            - /entrypoint.sh
+            - bash
+            - -ec
             - |
-              echo "[testnet] plugin=edu.hot.rwa-edu task=${TASK_TYPE} chain=${CHAIN_ID}"
-              echo "Simulation completed (educational only)"
+              echo "==> ${TASK_TYPE} evm toolchain gate"
+              solc --version | head -1
+              cat > /tmp/Gate.sol <<'SOL'
+              pragma solidity ^0.8.20;
+              contract EduGate { uint256 public n; function touch() external { n += 1; } }
+              SOL
+              solc --optimize --combined-json bin /tmp/Gate.sol > /tmp/out.json
+              test -s /tmp/out.json
+              echo "evm compile gate OK (testnet-only)"

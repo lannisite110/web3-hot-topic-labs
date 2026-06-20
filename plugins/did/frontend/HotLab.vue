@@ -1,61 +1,35 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { computed, ref } from 'vue'
+import { useLabSimulate } from '../../frontend/shared/useLabSimulate'
+import { parseHints } from '../../frontend/shared/parseHints'
 
-const param = ref('did:demo')
-const loading = ref(false)
-const error = ref('')
-const result = ref<Record<string, unknown> | null>(null)
-const status = ref<Record<string, unknown> | null>(null)
-const report = ref<Record<string, unknown> | null>(null)
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const didMethod = ref('did:demo:edu')
+const disclosureLevel = ref('email')
+const requestedClaim = ref('email')
 
-const PLUGIN_ID = 'edu.hot.did'
+const claimOptions = [
+  { id: 'email', label: '披露邮箱 hash', public: 'email@demo.edu', withheld: 'sha256:email…redacted' },
+  { id: 'age_over_18', label: '披露年龄区间', public: 'age>=18', withheld: 'sha256:exact-age…withheld' },
+  { id: 'country', label: '披露国家代码', public: 'country=SG', withheld: 'sha256:passport…withheld' },
+]
 
-async function runSimulate() {
-  loading.value = true
-  error.value = ''
-  result.value = null
-  status.value = null
-  report.value = null
-  if (pollTimer) clearInterval(pollTimer)
-  try {
-    const res = await fetch(`/api/v1/labs/${PLUGIN_ID}/simulate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_prompt: 'Move 链上 DID 与选择性披露教学',
-        params: { did_method: param.value },
-        allowed_chain_ids: [11155111],
-      }),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || res.statusText)
-    result.value = data
-    const taskId = (data.task as Record<string, unknown> | undefined)?.id as string | undefined
-    if (taskId) startPoll(taskId)
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e)
-  } finally {
-    loading.value = false
-  }
+const selectedClaim = computed(() => claimOptions.find((c) => c.id === requestedClaim.value))
+
+const { loading, error, result, taskStatus, taskReport, runSimulate, parseEvaluation } =
+  useLabSimulate('edu.hot.did')
+
+const evaluation = computed(() => parseEvaluation(result.value?.evaluation))
+const hints = computed(() => parseHints(evaluation.value?.audit_hints))
+
+const proofValid = computed(() => hints.value.proof_valid === 'true')
+
+function submit() {
+  runSimulate('Move 链上 DID 与选择性披露教学', {
+    did_method: didMethod.value,
+    disclosure_level: disclosureLevel.value,
+    requested_claim: requestedClaim.value,
+  })
 }
-
-function startPoll(taskId: string) {
-  pollTimer = setInterval(async () => {
-    try {
-      const s = await fetch(`/api/v1/labs/${PLUGIN_ID}/status/${taskId}`)
-      status.value = await s.json()
-      const st = (status.value?.status as string) || ''
-      if (st === 'completed' || st === 'failed') {
-        if (pollTimer) clearInterval(pollTimer)
-        const r = await fetch(`/api/v1/labs/${PLUGIN_ID}/report/${taskId}`)
-        report.value = await r.json()
-      }
-    } catch { /* ignore poll errors */ }
-  }, 1500)
-}
-
-onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 </script>
 
 <template>
@@ -64,33 +38,81 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
       <img src="/assets/icon.png" alt="" width="32" height="32" />
       <div>
         <h1>DID 隐私演示</h1>
-        <p class="muted">edu.hot.did · 测试网教学 only</p>
+        <p class="muted">选择性披露 · Move 教学 · 测试网 only</p>
       </div>
     </header>
-    <div class="card">
-      <label>DID 方法
-        <input v-model="param" />
-      </label>
-      <button :disabled="loading" @click="runSimulate">
-        { loading ? '提交中…' : '提交仿真实验' }
-      </button>
-      <p v-if="error" class="error">{ error }</p>
+
+    <div class="lab-grid">
+      <div class="card">
+        <h2>身份与披露策略</h2>
+        <label>DID 方法 <input v-model="didMethod" /></label>
+        <label>
+          披露级别
+          <select v-model="disclosureLevel">
+            <option value="email">标准披露</option>
+            <option value="minimal">最小披露</option>
+            <option value="none">不披露（仅 hash 验证）</option>
+          </select>
+        </label>
+        <label>
+          请求验证的 claim
+          <select v-model="requestedClaim">
+            <option v-for="c in claimOptions" :key="c.id" :value="c.id">{{ c.label }}</option>
+          </select>
+        </label>
+        <button :disabled="loading" @click="submit">{{ loading ? '验证中…' : '提交披露证明仿真' }}</button>
+        <p v-if="taskStatus" class="status">任务: {{ taskStatus }}</p>
+        <p v-if="error" class="error">{{ error }}</p>
+      </div>
+
+      <div class="card">
+        <h2>披露视图</h2>
+        <p v-if="selectedClaim"><strong>公开字段</strong>: {{ hints.revealed_field ?? selectedClaim.public }}</p>
+        <p><strong>保留 hash</strong>: <code>{{ hints.withheld_hash ?? selectedClaim?.withheld }}</code></p>
+        <p v-if="hints.claim_hash"><strong>claim hash</strong>: <code>{{ hints.claim_hash }}</code></p>
+        <p class="proof" :class="{ ok: proofValid, bad: !proofValid && result }">
+          证明: {{ proofValid ? '有效 ✓' : result ? '无效 ✗' : '待提交' }}
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>选择性披露原理</h2>
+        <ol class="flow">
+          <li>用户注册 DID + 存 disclosed / withheld hash</li>
+          <li>验证方仅请求必要 claim</li>
+          <li>链上返回 disclosed 字段，不泄露 withheld 原文</li>
+          <li>零知识/ hash 证明可扩展（教学简化）</li>
+        </ol>
+        <p class="muted">Move: <code>DidPrivacy.move</code></p>
+      </div>
     </div>
-    <pre v-if="result" class="block">simulate: { JSON.stringify(result, null, 2) }</pre>
-    <pre v-if="status" class="block">status: { JSON.stringify(status, null, 2) }</pre>
-    <pre v-if="report" class="block">report: { JSON.stringify(report, null, 2) }</pre>
+
+    <details v-if="taskReport || result" class="raw">
+      <summary>任务报告 JSON</summary>
+      <pre>{{ JSON.stringify(taskReport ?? result, null, 2) }}</pre>
+    </details>
   </section>
 </template>
 
 <style scoped>
 .lab-panel { padding: 1rem; }
 .lab-header { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem; }
-.muted { color: #64748b; font-size: 0.875rem; }
+.lab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
 .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; }
-label { display: block; }
-input { display: block; width: 100%; margin: 0.5rem 0; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; }
-button { padding: 0.5rem 1rem; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
-button:disabled { opacity: 0.6; }
+.card h2 { margin: 0 0 0.75rem; font-size: 1rem; }
+label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; }
+input, select { display: block; width: 100%; margin-top: 0.25rem; padding: 0.45rem; border: 1px solid #cbd5e1; border-radius: 4px; }
+.proof { font-weight: 600; margin-top: 0.75rem; }
+.proof.ok { color: #15803d; }
+.proof.bad { color: #dc2626; }
+.flow { padding-left: 1.25rem; margin: 0; }
+.flow li { margin-bottom: 0.35rem; }
+.muted { color: #64748b; font-size: 0.875rem; }
+code { font-family: monospace; font-size: 0.78rem; word-break: break-all; }
+.status { color: #2563eb; font-size: 0.875rem; margin-top: 0.5rem; }
 .error { color: #dc2626; }
-.block { margin-top: 1rem; background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow: auto; font-size: 0.8rem; }
+button { margin-top: 0.5rem; padding: 0.5rem 1rem; width: 100%; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+button:disabled { opacity: 0.6; }
+.raw { margin-top: 1rem; }
+.raw pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow: auto; font-size: 0.78rem; }
 </style>
