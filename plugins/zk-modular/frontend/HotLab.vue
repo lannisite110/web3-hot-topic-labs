@@ -1,21 +1,33 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useLabI18n } from '@/composables/useLabI18n'
 import { useLabSimulate } from '../../frontend/shared/useLabSimulate'
 import { parseHints, hintNumber } from '../../frontend/shared/parseHints'
 
+const PLUGIN_ID = 'edu.hot.zk-modular'
+const { t, locale } = useLabI18n(PLUGIN_ID)
+
 const batchSize = ref(8)
 const { loading, error, result, taskStatus, taskReport, runSimulate, parseEvaluation } =
-  useLabSimulate('edu.hot.zk-modular')
+  useLabSimulate(PLUGIN_ID)
 
 const evaluation = computed(() => parseEvaluation(result.value?.evaluation))
 const hints = computed(() => parseHints(evaluation.value?.audit_hints))
 
-const pipeline = [
-  { id: 'collect', label: '收集 L2 交易', icon: '📥' },
-  { id: 'prove', label: 'Mock 证明生成', icon: '⚡' },
-  { id: 'submit', label: '提交 Rollup 批次', icon: '📦' },
-  { id: 'anchor', label: 'L1 锚定 (Sepolia)', icon: '🔗' },
+const pipelineDefs = [
+  { id: 'collect', icon: '📥' },
+  { id: 'prove', icon: '⚡' },
+  { id: 'submit', icon: '📦' },
+  { id: 'anchor', icon: '🔗' },
 ]
+
+const pipeline = computed(() => {
+  void locale.value
+  return pipelineDefs.map((step) => ({
+    ...step,
+    label: t(`pipeline_${step.id}`),
+  }))
+})
 
 const demoBatches = computed(() => {
   const n = hintNumber(hints.value, 'batch_size', Number(batchSize.value) || 8)
@@ -47,27 +59,27 @@ function submit() {
     <header class="lab-header">
       <img src="/assets/icon.png" alt="" width="32" height="32" />
       <div>
-        <h1>ZK 模块化 Rollup 教学</h1>
-        <p class="muted">Mock Verifier · Sepolia 测试网 · 禁止生产 Rollup</p>
+        <h1>{{ t('title') }}</h1>
+        <p class="muted">{{ t('subtitle') }}</p>
       </div>
     </header>
 
     <div class="lab-grid">
       <div class="card">
-        <h2>批次参数</h2>
+        <h2>{{ t('batchParams') }}</h2>
         <label>
-          Rollup 批次大小 (1–64)
+          {{ t('batchSizeLabel') }}
           <input v-model.number="batchSize" type="number" min="1" max="64" />
         </label>
         <button :disabled="loading" @click="submit">
-          {{ loading ? '提交中…' : '提交批次仿真实验' }}
+          {{ loading ? t('submitting') : t('submitBatch') }}
         </button>
-        <p v-if="taskStatus" class="status">任务: {{ taskStatus }}</p>
+        <p v-if="taskStatus" class="status">{{ t('task') }}: {{ taskStatus }}</p>
         <p v-if="error" class="error">{{ error }}</p>
       </div>
 
       <div class="card">
-        <h2>Rollup 流水线</h2>
+        <h2>{{ t('pipelineTitle') }}</h2>
         <ol class="pipeline">
           <li
             v-for="(step, idx) in pipeline"
@@ -82,12 +94,12 @@ function submit() {
       </div>
 
       <div class="card">
-        <h2>批次列表 (演示)</h2>
+        <h2>{{ t('batchListTitle') }}</h2>
         <ul class="batch-list">
           <li v-for="b in demoBatches" :key="b.id">
             <div class="batch-row">
               <span>#{{ b.id }}</span>
-              <span class="tag" :class="b.status">{{ b.status }}</span>
+              <span class="tag" :class="b.status">{{ t(`status_${b.status}`) }}</span>
             </div>
             <code>{{ b.root }}</code>
             <small class="muted">~{{ Math.round(b.txs) }} txs</small>
@@ -98,7 +110,7 @@ function submit() {
     </div>
 
     <details v-if="taskReport || result" class="raw">
-      <summary>任务报告 JSON</summary>
+      <summary>{{ t('taskReportJson') }}</summary>
       <pre>{{ JSON.stringify(taskReport ?? result, null, 2) }}</pre>
     </details>
   </section>

@@ -1,22 +1,29 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useLabI18n } from '@/composables/useLabI18n'
 import { useLabSimulate } from '../../frontend/shared/useLabSimulate'
 import { parseHints } from '../../frontend/shared/parseHints'
+
+const PLUGIN_ID = 'edu.hot.aa-wallet'
+const { t, locale } = useLabI18n(PLUGIN_ID)
 
 const owner = ref('0x0000000000000000000000000000000000000001')
 const callData = ref('0xa9059cbb…transfer(demo)')
 const currentStep = ref('build')
 
-const flowSteps = [
-  { id: 'build', label: '构建 UserOp', desc: '打包 callData、nonce、gas' },
-  { id: 'sign', label: 'Owner 签名', desc: 'EOA / 会话密钥签名' },
-  { id: 'bundle', label: 'Bundler 提交', desc: '内存池 / 公共 Bundler' },
-  { id: 'validate', label: 'EntryPoint 校验', desc: 'validateUserOp (4337)' },
-  { id: 'execute', label: '链上执行', desc: 'executeUserOp 完成状态变更' },
-]
+const flowStepIds = ['build', 'sign', 'bundle', 'validate', 'execute'] as const
+
+const flowSteps = computed(() => {
+  void locale.value
+  return flowStepIds.map((id) => ({
+    id,
+    label: t(`flow_${id}`),
+    desc: t(`flow_${id}_desc`),
+  }))
+})
 
 const { loading, error, result, taskStatus, taskReport, runSimulate, parseEvaluation } =
-  useLabSimulate('edu.hot.aa-wallet')
+  useLabSimulate(PLUGIN_ID)
 
 const evaluation = computed(() => parseEvaluation(result.value?.evaluation))
 const hints = computed(() => parseHints(evaluation.value?.audit_hints))
@@ -24,13 +31,14 @@ const hints = computed(() => parseHints(evaluation.value?.audit_hints))
 const completedSteps = computed(() => {
   const raw = hints.value.aa_flow_completed
   if (raw) return raw.split(',')
-  if (taskStatus.value === 'completed') return flowSteps.map((s) => s.id)
+  if (taskStatus.value === 'completed') return [...flowStepIds]
   return [currentStep.value]
 })
 
-const userOpHash = computed(
-  () => hints.value.user_op_hash ?? '0x…（提交后生成）',
-)
+const userOpHash = computed(() => {
+  void locale.value
+  return hints.value.user_op_hash ?? t('userOpPending')
+})
 
 function selectStep(stepId: string) {
   currentStep.value = stepId
@@ -50,37 +58,37 @@ function submit() {
     <header class="lab-header">
       <img src="/assets/icon.png" alt="" width="32" height="32" />
       <div>
-        <h1>账户抽象 AA 钱包教学</h1>
-        <p class="muted">ERC-4337 风格 · Mock EntryPoint · Sepolia only</p>
+        <h1>{{ t('title') }}</h1>
+        <p class="muted">{{ t('subtitle') }}</p>
       </div>
     </header>
 
     <div class="lab-grid">
       <div class="card">
-        <h2>UserOp 参数</h2>
+        <h2>{{ t('userOpParams') }}</h2>
         <label>
-          Smart Account Owner
+          {{ t('ownerLabel') }}
           <input v-model="owner" />
         </label>
         <label>
-          callData (演示)
+          {{ t('callDataLabel') }}
           <input v-model="callData" />
         </label>
         <label>
-          模拟执行到哪一步
+          {{ t('stepLabel') }}
           <select v-model="currentStep">
             <option v-for="s in flowSteps" :key="s.id" :value="s.id">{{ s.label }}</option>
           </select>
         </label>
         <button :disabled="loading" @click="submit">
-          {{ loading ? '仿真中…' : '提交 AA 流程仿真' }}
+          {{ loading ? t('simulating') : t('submitAa') }}
         </button>
-        <p v-if="taskStatus" class="status">任务: {{ taskStatus }}</p>
+        <p v-if="taskStatus" class="status">{{ t('task') }}: {{ taskStatus }}</p>
         <p v-if="error" class="error">{{ error }}</p>
       </div>
 
       <div class="card span-2">
-        <h2>4337 流程</h2>
+        <h2>{{ t('flowTitle') }}</h2>
         <div class="flow-track">
           <button
             v-for="(step, idx) in flowSteps"
@@ -103,19 +111,18 @@ function submit() {
       </div>
 
       <div class="card">
-        <h2>UserOp 摘要</h2>
-        <p><strong>Hash</strong></p>
+        <h2>{{ t('userOpHash') }}</h2>
         <code class="hash">{{ userOpHash }}</code>
         <p v-if="hints.entry_point" class="muted">EntryPoint: {{ hints.entry_point }}</p>
         <p v-if="hints.owner" class="muted">Owner: {{ hints.owner }}</p>
         <p v-if="evaluation?.recommended_template" class="muted">
-          模板: {{ evaluation.recommended_template }}
+          {{ t('recommendedTemplate') }}: {{ evaluation.recommended_template }}
         </p>
       </div>
     </div>
 
     <details v-if="taskReport || result" class="raw">
-      <summary>任务报告 JSON</summary>
+      <summary>{{ t('taskReportJson') }}</summary>
       <pre>{{ JSON.stringify(taskReport ?? result, null, 2) }}</pre>
     </details>
   </section>

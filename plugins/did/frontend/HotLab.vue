@@ -1,22 +1,34 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useLabI18n } from '@/composables/useLabI18n'
 import { useLabSimulate } from '../../frontend/shared/useLabSimulate'
 import { parseHints } from '../../frontend/shared/parseHints'
+
+const PLUGIN_ID = 'edu.hot.did'
+const { t, locale } = useLabI18n(PLUGIN_ID)
 
 const didMethod = ref('did:demo:edu')
 const disclosureLevel = ref('email')
 const requestedClaim = ref('email')
 
-const claimOptions = [
-  { id: 'email', label: '披露邮箱 hash', public: 'email@demo.edu', withheld: 'sha256:email…redacted' },
-  { id: 'age_over_18', label: '披露年龄区间', public: 'age>=18', withheld: 'sha256:exact-age…withheld' },
-  { id: 'country', label: '披露国家代码', public: 'country=SG', withheld: 'sha256:passport…withheld' },
+const claimOptionDefs = [
+  { id: 'email', key: 'claim_email', public: 'email@demo.edu', withheld: 'sha256:email…redacted' },
+  { id: 'age_over_18', key: 'claim_age', public: 'age>=18', withheld: 'sha256:exact-age…withheld' },
+  { id: 'country', key: 'claim_country', public: 'country=SG', withheld: 'sha256:passport…withheld' },
 ]
 
-const selectedClaim = computed(() => claimOptions.find((c) => c.id === requestedClaim.value))
+const claimOptions = computed(() => {
+  void locale.value
+  return claimOptionDefs.map((c) => ({
+    ...c,
+    label: t(c.key),
+  }))
+})
+
+const selectedClaim = computed(() => claimOptionDefs.find((c) => c.id === requestedClaim.value))
 
 const { loading, error, result, taskStatus, taskReport, runSimulate, parseEvaluation } =
-  useLabSimulate('edu.hot.did')
+  useLabSimulate(PLUGIN_ID)
 
 const evaluation = computed(() => parseEvaluation(result.value?.evaluation))
 const hints = computed(() => parseHints(evaluation.value?.audit_hints))
@@ -37,58 +49,58 @@ function submit() {
     <header class="lab-header">
       <img src="/assets/icon.png" alt="" width="32" height="32" />
       <div>
-        <h1>DID 隐私演示</h1>
-        <p class="muted">选择性披露 · Move 教学 · 测试网 only</p>
+        <h1>{{ t('title') }}</h1>
+        <p class="muted">{{ t('subtitle') }}</p>
       </div>
     </header>
 
     <div class="lab-grid">
       <div class="card">
-        <h2>身份与披露策略</h2>
-        <label>DID 方法 <input v-model="didMethod" /></label>
+        <h2>{{ t('identitySection') }}</h2>
+        <label>{{ t('didMethod') }} <input v-model="didMethod" /></label>
         <label>
-          披露级别
+          {{ t('disclosureLevel') }}
           <select v-model="disclosureLevel">
-            <option value="email">标准披露</option>
-            <option value="minimal">最小披露</option>
-            <option value="none">不披露（仅 hash 验证）</option>
+            <option value="email">{{ t('disclosure_email') }}</option>
+            <option value="minimal">{{ t('disclosure_minimal') }}</option>
+            <option value="none">{{ t('disclosure_none') }}</option>
           </select>
         </label>
         <label>
-          请求验证的 claim
+          {{ t('claimLabel') }}
           <select v-model="requestedClaim">
             <option v-for="c in claimOptions" :key="c.id" :value="c.id">{{ c.label }}</option>
           </select>
         </label>
-        <button :disabled="loading" @click="submit">{{ loading ? '验证中…' : '提交披露证明仿真' }}</button>
-        <p v-if="taskStatus" class="status">任务: {{ taskStatus }}</p>
+        <button :disabled="loading" @click="submit">{{ loading ? t('verifying') : t('submitProof') }}</button>
+        <p v-if="taskStatus" class="status">{{ t('task') }}: {{ taskStatus }}</p>
         <p v-if="error" class="error">{{ error }}</p>
       </div>
 
       <div class="card">
-        <h2>披露视图</h2>
-        <p v-if="selectedClaim"><strong>公开字段</strong>: {{ hints.revealed_field ?? selectedClaim.public }}</p>
-        <p><strong>保留 hash</strong>: <code>{{ hints.withheld_hash ?? selectedClaim?.withheld }}</code></p>
+        <h2>{{ t('disclosureView') }}</h2>
+        <p v-if="selectedClaim"><strong>{{ t('publicField') }}</strong>: {{ hints.revealed_field ?? selectedClaim.public }}</p>
+        <p><strong>{{ t('withheldField') }}</strong>: <code>{{ hints.withheld_hash ?? selectedClaim?.withheld }}</code></p>
         <p v-if="hints.claim_hash"><strong>claim hash</strong>: <code>{{ hints.claim_hash }}</code></p>
         <p class="proof" :class="{ ok: proofValid, bad: !proofValid && result }">
-          证明: {{ proofValid ? '有效 ✓' : result ? '无效 ✗' : '待提交' }}
+          {{ t('proofStatus') }}: {{ proofValid ? t('proofValid') : result ? t('proofInvalid') : '—' }}
         </p>
       </div>
 
       <div class="card">
-        <h2>选择性披露原理</h2>
+        <h2>{{ t('disclosureView') }}</h2>
         <ol class="flow">
-          <li>用户注册 DID + 存 disclosed / withheld hash</li>
-          <li>验证方仅请求必要 claim</li>
-          <li>链上返回 disclosed 字段，不泄露 withheld 原文</li>
-          <li>零知识/ hash 证明可扩展（教学简化）</li>
+          <li>{{ t('flow_1') }}</li>
+          <li>{{ t('flow_2') }}</li>
+          <li>{{ t('flow_3') }}</li>
+          <li>{{ t('flow_4') }}</li>
         </ol>
         <p class="muted">Move: <code>DidPrivacy.move</code></p>
       </div>
     </div>
 
     <details v-if="taskReport || result" class="raw">
-      <summary>任务报告 JSON</summary>
+      <summary>{{ t('taskReportJson') }}</summary>
       <pre>{{ JSON.stringify(taskReport ?? result, null, 2) }}</pre>
     </details>
   </section>

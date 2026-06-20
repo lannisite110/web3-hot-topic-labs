@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useLabI18n } from '@/composables/useLabI18n'
 import { useLabSimulate } from '../../frontend/shared/useLabSimulate'
+
+const PLUGIN_ID = 'edu.hot.zk-circuit'
+const { t } = useLabI18n(PLUGIN_ID)
 
 const param = ref('demo_circuit')
 const { loading, error, result, taskStatus, taskReport, runSimulate, parseEvaluation } =
-  useLabSimulate('edu.hot.zk-circuit')
+  useLabSimulate(PLUGIN_ID)
 
 const evaluation = computed(() => parseEvaluation(result.value?.evaluation))
 
@@ -18,28 +22,28 @@ function submit() {
     <header class="lab-header">
       <img src="/assets/icon.png" alt="" width="32" height="32" />
       <div>
-        <h1>ZK 电路编译教学</h1>
-        <p class="muted">edu.hot.zk-circuit · 测试网教学 only</p>
+        <h1>{{ t('title') }}</h1>
+        <p class="muted">{{ t('testnetOnly', { id: PLUGIN_ID }) }}</p>
       </div>
     </header>
     <div class="card">
-      <label>电路名称
+      <label>{{ t('circuitName') }}
         <input v-model="param" />
       </label>
       <button :disabled="loading" @click="submit">
-        {{ loading ? '提交中…' : '提交仿真实验' }}
+        {{ loading ? t('submitting') : t('submit') }}
       </button>
-      <p v-if="taskStatus" class="status">任务状态: {{ taskStatus }}</p>
+      <p v-if="taskStatus" class="status">{{ t('taskStatus') }}: {{ taskStatus }}</p>
       <p v-if="error" class="error">{{ error }}</p>
     </div>
     <div v-if="evaluation" class="eval-card">
-      <h2>规则评估</h2>
-      <p v-if="evaluation.compliance_passed !== false" class="ok">合规检查通过</p>
+      <h2>{{ t('ruleEval') }}</h2>
+      <p v-if="evaluation.compliance_passed !== false" class="ok">{{ t('complianceOk') }}</p>
       <p v-if="evaluation.recommended_template">
-        推荐模板: <code>{{ evaluation.recommended_template }}</code>
+        {{ t('recommendedTemplate') }}: <code>{{ evaluation.recommended_template }}</code>
       </p>
       <p v-if="evaluation.recommended_language">
-        推荐语言: <code>{{ evaluation.recommended_language }}</code>
+        {{ t('recommendedLanguage') }}: <code>{{ evaluation.recommended_language }}</code>
       </p>
       <ul v-if="evaluation.audit_hints?.length">
         <li v-for="(hint, i) in evaluation.audit_hints" :key="i">{{ hint }}</li>

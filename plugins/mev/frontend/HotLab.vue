@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useLabI18n } from '@/composables/useLabI18n'
 import { useLabSimulate } from '../../frontend/shared/useLabSimulate'
 import { parseHints, hintNumber } from '../../frontend/shared/parseHints'
+
+const PLUGIN_ID = 'edu.hot.mev'
+const { t } = useLabI18n(PLUGIN_ID)
 
 const blockSlots = ref(12)
 const builderCount = ref(3)
@@ -15,7 +19,7 @@ const demoBuilders = computed(() =>
 )
 
 const { loading, error, result, taskStatus, taskReport, runSimulate, parseEvaluation } =
-  useLabSimulate('edu.hot.mev')
+  useLabSimulate(PLUGIN_ID)
 
 const evaluation = computed(() => parseEvaluation(result.value?.evaluation))
 const hints = computed(() => parseHints(evaluation.value?.audit_hints))
@@ -39,26 +43,26 @@ function submit() {
     <header class="lab-header">
       <img src="/assets/icon.png" alt="" width="32" height="32" />
       <div>
-        <h1>MEV PBS 博弈仿真</h1>
-        <p class="muted">Proposer-Builder 分离 · 非套利机器人 · Sepolia only</p>
+        <h1>{{ t('title') }}</h1>
+        <p class="muted">{{ t('subtitle') }}</p>
       </div>
     </header>
 
     <div class="lab-grid">
       <div class="card">
-        <h2>Slot 参数</h2>
-        <label>区块槽位数 <input v-model.number="blockSlots" type="number" min="1" max="32" /></label>
-        <label>Builder 数量 <input v-model.number="builderCount" type="number" min="2" max="8" /></label>
-        <label>当前 slot 索引 <input v-model.number="slotIndex" type="number" min="0" /></label>
-        <button :disabled="loading" @click="submit">{{ loading ? '仿真中…' : '运行 PBS 拍卖仿真' }}</button>
-        <p v-if="taskStatus" class="status">任务: {{ taskStatus }}</p>
+        <h2>{{ t('slotParams') }}</h2>
+        <label>{{ t('blockSlots') }} <input v-model.number="blockSlots" type="number" min="1" max="32" /></label>
+        <label>{{ t('builderCount') }} <input v-model.number="builderCount" type="number" min="2" max="8" /></label>
+        <label>{{ t('slotIndex') }} <input v-model.number="slotIndex" type="number" min="0" /></label>
+        <button :disabled="loading" @click="submit">{{ loading ? t('simulating') : t('runPbs') }}</button>
+        <p v-if="taskStatus" class="status">{{ t('task') }}: {{ taskStatus }}</p>
         <p v-if="error" class="error">{{ error }}</p>
       </div>
 
       <div class="card">
-        <h2>Builder 出价 (演示)</h2>
+        <h2>{{ t('builderBids') }}</h2>
         <table class="bid-table">
-          <thead><tr><th>Builder</th><th>出价 (gwei)</th></tr></thead>
+          <thead><tr><th>Builder</th><th>{{ t('bidGwei') }}</th></tr></thead>
           <tbody>
             <tr v-for="b in demoBuilders" :key="b.id" :class="{ win: b.id === winner }">
               <td>{{ b.id }}</td>
@@ -66,25 +70,25 @@ function submit() {
             </tr>
           </tbody>
         </table>
-        <p class="win-line">Proposer 选择: <strong>{{ winner }}</strong> · {{ winningBid }} gwei</p>
-        <p v-if="hints.pbs_mode" class="muted">模式: {{ hints.pbs_mode }}</p>
+        <p class="win-line">{{ t('proposerPick') }}: <strong>{{ winner }}</strong> · {{ winningBid }} gwei</p>
+        <p v-if="hints.pbs_mode" class="muted">{{ t('mode') }}: {{ hints.pbs_mode }}</p>
       </div>
 
       <div class="card">
-        <h2>PBS 流程</h2>
+        <h2>{{ t('pbsFlow') }}</h2>
         <ol class="flow">
-          <li>Builders 对 slot 提交 bid</li>
-          <li>Proposer 收集 bid 并选最高</li>
-          <li>选中 Builder 构建区块</li>
-          <li>Proposer 广播（测试网演示）</li>
+          <li>{{ t('pbs_1') }}</li>
+          <li>{{ t('pbs_2') }}</li>
+          <li>{{ t('pbs_3') }}</li>
+          <li>{{ t('pbs_4') }}</li>
         </ol>
         <p class="muted">Solidity: <code>MevPbsAuction.sol</code></p>
-        <p class="warn">禁止: 套利机器人 / 主网抢跑</p>
+        <p class="warn">{{ t('arbWarning') }}</p>
       </div>
     </div>
 
     <details v-if="taskReport || result" class="raw">
-      <summary>任务报告 JSON</summary>
+      <summary>{{ t('taskReportJson') }}</summary>
       <pre>{{ JSON.stringify(taskReport ?? result, null, 2) }}</pre>
     </details>
   </section>

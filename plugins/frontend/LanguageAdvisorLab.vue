@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { getPluginRegistry } from '@/plugins/loader'
+import { useLabI18n } from '@/composables/useLabI18n'
 import { useLabSimulate } from './shared/useLabSimulate'
 import {
   LANGUAGE_LABELS,
@@ -10,21 +11,31 @@ import {
 import LabAssistDrawer from '@/components/LabAssistDrawer.vue'
 
 const PLUGIN_ID = 'edu.hot.language-advisor'
+const { t, locale } = useLabI18n(PLUGIN_ID)
 
-const scenarios = [
-  { id: 'defi', label: '通用 DeFi / DEX', prompt: '通用 DeFi swap lending staking dex' },
-  { id: 'vault', label: '金库 / 高安全', prompt: 'vault treasury timelock 资金池 高安全' },
-  { id: 'gas', label: 'Gas 优化 / 撮合', prompt: 'gas 优化 huff 撮合内核 高频' },
-  { id: 'solana', label: 'Solana 高性能', prompt: 'solana anchor 高tps depin 链上订单簿' },
-  { id: 'nft', label: 'NFT / Move 资产', prompt: 'nft move aptos sui 资产安全 防重放' },
-  { id: 'zk', label: 'ZK Rollup', prompt: 'zk rollup cairo starknet 零知识 证明' },
-  { id: 'btc', label: '比特币二层', prompt: 'bitcoin btc stacks clarity 比特币二层' },
-  { id: 'game', label: '链游 / Cadence', prompt: 'flow cadence 链游 gamefi ip nft' },
-  { id: 'pay', label: '合规支付 / TEAL', prompt: 'algorand teal pyteal 合规支付 极简' },
+const scenarioDefs = [
+  { id: 'defi', prompt: '通用 DeFi swap lending staking dex' },
+  { id: 'vault', prompt: 'vault treasury timelock 资金池 高安全' },
+  { id: 'gas', prompt: 'gas 优化 huff 撮合内核 高频' },
+  { id: 'solana', prompt: 'solana anchor 高tps depin 链上订单簿' },
+  { id: 'nft', prompt: 'nft move aptos sui 资产安全 防重放' },
+  { id: 'zk', prompt: 'zk rollup cairo starknet 零知识 证明' },
+  { id: 'btc', prompt: 'bitcoin btc stacks clarity 比特币二层' },
+  { id: 'game', prompt: 'flow cadence 链游 gamefi ip nft' },
+  { id: 'pay', prompt: 'algorand teal pyteal 合规支付 极简' },
 ]
 
-const selectedId = ref(scenarios[0].id)
-const customPrompt = ref(scenarios[0].prompt)
+const scenarios = computed(() => {
+  void locale.value
+  return scenarioDefs.map((s) => ({
+    id: s.id,
+    label: t(`scenario_${s.id}`),
+    prompt: s.prompt,
+  }))
+})
+
+const selectedId = ref(scenarioDefs[0].id)
+const customPrompt = ref(scenarioDefs[0].prompt)
 
 const advise = useLabSimulate(PLUGIN_ID)
 const compile = useLabSimulate(PLUGIN_ID)
@@ -46,7 +57,7 @@ const {
   runSimulate: runCompileSim,
 } = compile
 
-const activePrompt = computed(() => customPrompt.value.trim() || scenarios[0].prompt)
+const activePrompt = computed(() => customPrompt.value.trim() || scenarioDefs[0].prompt)
 
 const evaluation = computed(() => {
   const raw = adviseResult.value?.evaluation
@@ -68,7 +79,7 @@ const suggestedLabMeta = computed(() => {
 
 function pickScenario(id: string) {
   selectedId.value = id
-  const s = scenarios.find((x) => x.id === id)
+  const s = scenarioDefs.find((x) => x.id === id)
   if (s) customPrompt.value = s.prompt
 }
 
@@ -98,8 +109,8 @@ function runCompile() {
     <header class="lab-header">
       <img src="/assets/icon.png" alt="" width="32" height="32" />
       <div>
-        <h1>智能合约语言择优</h1>
-        <p class="muted">edu.hot.language-advisor · 7 语言组 · 测试网教学 only</p>
+        <h1>{{ t('title') }}</h1>
+        <p class="muted">{{ t('subtitle') }}</p>
       </div>
     </header>
 
@@ -118,20 +129,20 @@ function runCompile() {
 
     <div class="card">
       <label class="field">
-        业务描述（可编辑）
-        <textarea v-model="customPrompt" rows="3" placeholder="描述你的 DeFi / ZK / NFT 场景…" />
+        {{ t('promptLabel') }}
+        <textarea v-model="customPrompt" rows="3" :placeholder="t('promptPlaceholder')" />
       </label>
       <div class="actions">
         <button class="primary" :disabled="adviseLoading" @click="runAdvise">
-          {{ adviseLoading ? '分析中…' : '获取语言推荐' }}
+          {{ adviseLoading ? t('advising') : t('getAdvice') }}
         </button>
       </div>
-      <p v-if="adviseTaskStatus" class="status">推荐任务: {{ adviseTaskStatus }}</p>
+      <p v-if="adviseTaskStatus" class="status">{{ t('adviseTask') }}: {{ adviseTaskStatus }}</p>
       <p v-if="adviseError" class="error">{{ adviseError }}</p>
     </div>
 
     <div v-if="evaluation?.compliance_passed" class="result-card">
-      <h2>推荐结果</h2>
+      <h2>{{ t('resultTitle') }}</h2>
       <div class="badges">
         <span class="badge lang">{{ LANGUAGE_LABELS[evaluation.recommended_language ?? ''] ?? evaluation.recommended_language }}</span>
         <span v-if="evaluation.toolchain_group" class="badge chain">
@@ -141,20 +152,20 @@ function runCompile() {
       </div>
       <p v-if="evaluation.reason" class="reason">{{ evaluation.reason }}</p>
       <p v-if="evaluation.recommended_template" class="template">
-        入门模板: <code>{{ evaluation.recommended_template }}</code>
+        {{ t('starterTemplate') }}: <code>{{ evaluation.recommended_template }}</code>
       </p>
       <div v-if="evaluation.tools?.length" class="tools">
-        <span v-for="t in evaluation.tools" :key="t" class="tool-tag">{{ t }}</span>
+        <span v-for="tool in evaluation.tools" :key="tool" class="tool-tag">{{ tool }}</span>
       </div>
-      <p v-if="evaluation.image" class="muted image-hint">Job 镜像: {{ evaluation.image }}</p>
+      <p v-if="evaluation.image" class="muted image-hint">{{ t('jobImage') }}: {{ evaluation.image }}</p>
 
       <div v-if="suggestedLabMeta" class="suggest-row">
         <div>
-          <strong>建议下一步 Lab</strong>
+          <strong>{{ t('suggestNext') }}</strong>
           <p class="muted">{{ suggestedLabMeta.name }} ({{ suggestedLabMeta.id }})</p>
         </div>
         <a v-if="suggestedLabMeta" :href="suggestedLabMeta.routePrefix" class="secondary link-btn">
-          打开专题 Lab →
+          {{ t('openLab') }}
         </a>
       </div>
 
@@ -165,15 +176,15 @@ function runCompile() {
           :disabled="compileLoading || !evaluation.recommended_language"
           @click="runCompile"
         >
-          {{ compileLoading ? '编译任务提交中…' : '提交多语言编译 Job（HOT_MULTI_LANG_COMPILE）' }}
+          {{ compileLoading ? t('compileSubmitting') : t('compileJob') }}
         </button>
-        <p v-if="compileTaskStatus" class="status">编译任务: {{ compileTaskStatus }}</p>
+        <p v-if="compileTaskStatus" class="status">{{ t('compileTask') }}: {{ compileTaskStatus }}</p>
         <p v-if="compileError" class="error">{{ compileError }}</p>
       </div>
     </div>
 
     <details v-if="compileTaskReport || adviseTaskReport" class="raw-json">
-      <summary>任务报告 JSON</summary>
+      <summary>{{ t('taskReportJson') }}</summary>
       <pre>{{ JSON.stringify(compileTaskReport ?? adviseTaskReport, null, 2) }}</pre>
     </details>
 
