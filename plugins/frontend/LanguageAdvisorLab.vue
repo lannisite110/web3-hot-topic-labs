@@ -7,6 +7,7 @@ import {
   TOOLCHAIN_LABELS,
   normalizeAdvisorEvaluation,
 } from './shared/advisorTypes'
+import LabAssistDrawer from '@/components/LabAssistDrawer.vue'
 
 const PLUGIN_ID = 'edu.hot.language-advisor'
 
@@ -175,6 +176,13 @@ function runCompile() {
       <summary>任务报告 JSON</summary>
       <pre>{{ JSON.stringify(compileTaskReport ?? adviseTaskReport, null, 2) }}</pre>
     </details>
+
+    <LabAssistDrawer
+      plugin-id="edu.hot.language-advisor"
+      :params="{ scenario: activePrompt, tags: selectedId }"
+      :allowed-chain-ids="[11155111]"
+      :audit-hints="evaluation?.audit_hints ?? []"
+    />
   </section>
 </template>
 
