@@ -1,6 +1,6 @@
 # 学习路径 · Web3 Hot Topic Labs（子库1）
 
-> **本仓** v0.3.0 · 主库 **v1.0.0** · 11 热点插件
+> **本仓** v0.4.0 · 主库 **v1.1.0** · 11 热点插件 · 主库 **阶段 3A**
 
 ---
 
@@ -10,7 +10,7 @@
 
 **[tutorials/README.md](tutorials/README.md)** — 各插件分步教程索引
 
-主库交叉引用：[LEARNING_PATH 阶段 3A](https://github.com/lannisite110/web3-edu-platform-core/blob/main/docs/LEARNING_PATH.md)
+主库交叉引用：[LEARNING_PATH 阶段 3A](../web3-edu-platform-core/docs/LEARNING_PATH.md)
 
 ---
 

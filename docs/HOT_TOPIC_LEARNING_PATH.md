@@ -1,7 +1,7 @@
 # Web3 热点专题 · 完整学习路径
 
-> **子库** `web3-hot-topic-labs` v0.3.0 · 主库 ≥ v1.0.0 · **11 插件**  
-> 交叉引用：主库 [LEARNING_PATH.md](https://github.com/lannisite110/web3-edu-platform-core/blob/main/docs/LEARNING_PATH.md) 阶段 3
+> **子库** `web3-hot-topic-labs` v0.4.0 · 主库 ≥ v1.1.0 · **11 插件**  
+> 交叉引用：主库 [LEARNING_PATH.md](../web3-edu-platform-core/docs/LEARNING_PATH.md) **阶段 3A**
 
 ---
 

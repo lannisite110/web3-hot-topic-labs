@@ -4,12 +4,12 @@
 
 # Web3 Hot Topic Labs
 
-> **版本 v0.3.0** · 测试网/仿真 only · 主库 **v1.0.0**
+> **版本 v0.4.0** · 测试网/仿真 only · 主库 **v1.1.0** · 主库 LEARNING_PATH **阶段 3A**
 
 ## 文档
 
 - [热点完整学习路径](docs/HOT_TOPIC_LEARNING_PATH.md) · [教程索引](docs/tutorials/README.md)
-- [学习路径（子库）](docs/LEARNING_PATH.md) · [快速部署](docs/QUICK_DEPLOY.md)
+- [学习路径（子库入口）](docs/LEARNING_PATH.md) · [快速部署](docs/QUICK_DEPLOY.md)
 - [分阶段工程路线](docs/HOT_TOPIC_PHASES.md)
 
 Web3 前沿热点**教学插件包**（子库1）。
@@ -20,7 +20,7 @@ Web3 前沿热点**教学插件包**（子库1）。
 2. **智能语言择优** — `edu.hot.language-advisor` 按业务自动推荐最优合约语言
 3. **10 个热点 Lab** — ZK / AA / MEV / DAO 等（共 **11** 插件含择优入口）
 
-依赖 [web3-edu-platform-core](https://github.com/lannisite110/web3-edu-platform-core) **v1.0.0**（`coreVersion: ">=0.6.0 <2.0.0"`）。
+依赖 [web3-edu-platform-core](https://github.com/lannisite110/web3-edu-platform-core) **v1.1.0**（`coreVersion: ">=0.6.0 <2.0.0"`）。
 
 ## 插件清单（11）
 
